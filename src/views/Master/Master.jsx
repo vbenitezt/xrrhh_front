@@ -78,7 +78,6 @@ const Master = ({
   if (isFetching || isSaving || isRemoving) {
     return <Spinner />;
   }
-
   return (
     <FlexColumn>
       <BaseModal
@@ -86,7 +85,7 @@ const Master = ({
         hasButton={!disableCreation}
         headLabel={headTitle}
         setIsModalOpen={customAddingAction ? customAddingAction : setIsModalOpen}
-        title={`${editing ? "Editar" : "Crear"} ${title}`}
+        title={`${editing ? "Editar (" + editing + ")" : "Crear"} ${title}`}
         text={`Agregar ${title}`}
         width={600}
         headTitle={headTitle}

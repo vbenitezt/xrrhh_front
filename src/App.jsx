@@ -25,7 +25,7 @@ function App() {
           path={route.path}
           element={
             <Layer>
-              <route.component />
+              <route.component {...(route.props ?? {})}/>
             </Layer>
           }
           key={index}
@@ -66,7 +66,7 @@ function App() {
               {/* </Route> */}
               <Route path="*" element={<NotFound />} />
             </Routes>
-            <ReactQueryDevtools />
+            {process.env.NODE_ENV === 'development' && <ReactQueryDevtools initialIsOpen={false} />}
           </ReactQueryProvider>
         </AntApp>
       </ConfigProvider>

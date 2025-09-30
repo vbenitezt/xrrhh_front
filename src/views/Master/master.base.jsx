@@ -47,7 +47,14 @@ export const makeColumns = ({
               ),
             }
             : item.field_show ? {
-              render: (_, row) => <>{row[item.field_show]}</>,
+              render: (_, row) => {
+                // item.field_show puede ser algo como "_cargo_superior.desc_cargo"
+                console.log("ROW",row);
+                const path = item.field_show;
+                // Soportar paths anidados separados por punto
+                const value = path.split('.').reduce((acc, key) => acc && acc[key], row);
+                return <>{value}</>;
+              },
             } : (item.name.includes("date") || item.type === "date") ? {
               align: "center",
               render: (key) => <>{dayjs(key, "YYYY-MM-DD").isValid() && dayjs(key, "YYYY-MM-DD").format("DD-MM-YYYY")}</>,
@@ -80,8 +87,16 @@ export const makeColumns = ({
               } else {
                 setEditing(row[pk]);
                 setIsModalOpen(true);
+                const values = {}
+                for (const k of Object.keys(row)) {
+                  if (dayjs(row[k], "YYYY-MM-DD").isValid()){
+                    values[k] = dayjs(row[k], "YYYY-MM-DD")
+                  } else {
+                    values[k] = row[k]
+                  }
+                }
                 form.setFieldsValue({
-                  ...row,
+                  ...values,
                 });
               }
             }}
