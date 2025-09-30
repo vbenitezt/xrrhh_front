@@ -20,14 +20,14 @@ import { TbSitemap } from "react-icons/tb";
 
 export const CircleButton = ({ icon = <QuestionOutlined />, title = "", ...props }) => {
   return (
-    <Tooltip title={title}>
+    <Tooltip title={title} getPopupContainer={(trigger) => {return trigger.parentNode}}>
       <Button
         shape="circle"
         type="default"
         size="default"
         icon={icon}
         {...props}
-      />
+      />      
     </Tooltip>
   );
 };
@@ -38,9 +38,7 @@ export const AddButton = ({
   ...props
 }) => {
   return (
-    <Tooltip title={title}>
-      <CircleButton type="primary" icon={icon} {...props} />
-    </Tooltip>
+      <CircleButton type="primary" icon={icon} title={title} {...props} />
   );
 };
 
@@ -49,10 +47,8 @@ export const ImportButton = ({
   icon = <FileExcelOutlined />,
   ...props
 }) => {
-  return (
-    <Tooltip title={title}>
-      <CircleButton icon={icon} {...props} />
-    </Tooltip>
+  return (  
+      <CircleButton icon={icon} title={title} {...props} />
   );
 };
 
@@ -62,9 +58,7 @@ export const ExportButton = ({
   ...props
 }) => {
   return (
-    <Tooltip title={title}>
-      <CircleButton icon={icon} {...props} />
-    </Tooltip>
+      <CircleButton icon={icon} title={title} {...props} />
   );
 };  
 
@@ -74,9 +68,8 @@ export const PrintPDFButton = ({
   ...props
 }) => {
   return (
-    <Tooltip title={title}>
-      <CircleButton icon={icon} {...props} />
-    </Tooltip>
+      <CircleButton icon={icon} title={title} {...props} />
+    
   );
 };
 
@@ -86,9 +79,7 @@ export const CloseButton = ({
   ...props
 }) => {
   return (
-    <Tooltip title={title}>
-      <CircleButton danger icon={icon} {...props} />
-    </Tooltip>
+      <CircleButton danger icon={icon} title={title} {...props} />
   );
 };
 
@@ -98,9 +89,7 @@ export const ClearButton = ({
   ...props
 }) => {
   return (
-    <Tooltip title={title}>
-      <CircleButton danger icon={icon} {...props} />
-    </Tooltip>
+      <CircleButton danger icon={icon} title={title} {...props} />
   );
 };
 
@@ -110,9 +99,7 @@ export const RemoveButton = ({
   ...props
 }) => {
   return (
-    <Tooltip title={title}>
-      <CircleButton danger icon={icon} {...props} />
-    </Tooltip>
+      <CircleButton danger icon={icon} title={title} {...props} />
   );
 };
 
@@ -122,9 +109,7 @@ export const NextButton = ({
   ...props
 }) => {
   return (
-    <Tooltip title={title}>
-      <CircleButton icon={icon} {...props} />
-    </Tooltip>
+      <CircleButton icon={icon} title={title} {...props} />
   );
 };
 
@@ -134,9 +119,7 @@ export const RelationButton = ({
   ...props
 }) => {
   return (
-    <Tooltip title={title}>
-      <CircleButton icon={icon} {...props} />
-    </Tooltip>
+      <CircleButton icon={icon} title={title} {...props} />
   );
 };
 
@@ -146,9 +129,7 @@ export const EditButton = ({
   ...props
 }) => {
   return (
-    <Tooltip title={title}>
-      <CircleButton icon={icon} {...props} />
-    </Tooltip>
+      <CircleButton icon={icon} title={title} {...props} />
   );
 };
 
@@ -158,9 +139,7 @@ export const NewButton = ({
   ...props
 }) => {
   return (
-    <Tooltip title={title}>
-      <CircleButton icon={icon} {...props} />
-    </Tooltip>
+      <CircleButton icon={icon} title={title} {...props} />
   );
 };
 
@@ -170,9 +149,7 @@ export const SendMailButton = ({
   ...props
 }) => {
   return (
-    <Tooltip title={title}>
-      <CircleButton icon={icon} {...props} />
-    </Tooltip>
+      <CircleButton icon={icon} title={title} {...props} />
   );
 };
 
@@ -187,9 +164,7 @@ export const PreviousButton = ({
     onClick = () => navigate(-1);
   }
   return (
-    <Tooltip title={title}>
-      <CircleButton onClick={onClick} icon={icon} {...props} />
-    </Tooltip>
+      <CircleButton onClick={onClick} icon={icon} title={title} {...props} />
   );
 };
 
@@ -198,7 +173,6 @@ export const SaveButton = ({ title = "Guardar", ...props }) => {
     token: { colorSuccess, colorSuccessBg },
   } = theme.useToken();
   return (
-    <Tooltip title={title}>
       <CircleButton
         type="primary"
         style={{
@@ -207,8 +181,8 @@ export const SaveButton = ({ title = "Guardar", ...props }) => {
           "--hover-opacity": 0.5,
         }}
         icon={<SaveOutlined />}
+        title={title}
         {...props}
       />
-    </Tooltip>
   );
 };

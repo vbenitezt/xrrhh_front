@@ -48,7 +48,7 @@ const BaseModal = ({
         title={title}
         okText={onOkText}
         cancelText={onCancelText}
-        destroyOnClose
+        destroyOnHidden
         okButtonProps={{
           htmlType: "submit",
           type: "default"

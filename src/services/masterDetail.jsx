@@ -23,7 +23,7 @@ export const useGetDetailsStructure = (path, extra) => {
   });
 };
 
-export const useSaveRecord = (path = "", title = "Registro") => {
+export const useSaveRecord = (path = "", title = "Registro", extra) => {
   const { selectedCompany } = useGlobalFilterStore();
   const queryClient = useQueryClient();
   const { notify } = useNotification();
@@ -35,10 +35,12 @@ export const useSaveRecord = (path = "", title = "Registro") => {
     onSuccess: (response) => {
       if (response) {
         queryClient.setQueryData(
-          [path, selectedCompany],
+          [path, selectedCompany, extra],
           response
         );
         notify(`${title} se guardó correctamente`);
+        console.log("POST SAVE",response);
+        
       }
     },
     onError: ({ response }) => {

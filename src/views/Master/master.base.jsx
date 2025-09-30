@@ -49,7 +49,7 @@ export const makeColumns = ({
             : item.field_show ? {
               render: (_, row) => {
                 // item.field_show puede ser algo como "_cargo_superior.desc_cargo"
-                console.log("ROW",row);
+                // console.log("ROW",row);
                 const path = item.field_show;
                 // Soportar paths anidados separados por punto
                 const value = path.split('.').reduce((acc, key) => acc && acc[key], row);

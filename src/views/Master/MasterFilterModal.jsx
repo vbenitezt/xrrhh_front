@@ -30,7 +30,7 @@ const MasterFilterModal = ({
         top: 30,
       }}
       title={title}
-      destroyOnClose
+      destroyOnHidden
       open={isModalOpen}
       okText="Aceptar"
       cancelText="Cancelar"

@@ -123,7 +123,7 @@ const CustomForm = ({
       maxWidth,
     }
   }
-
+  
   return (
     <Form
       size="small"
@@ -133,28 +133,77 @@ const CustomForm = ({
       layout={flex ? "vertical" : "horizontal"}
       {...(flex ? {} : normalFormProps)}
     >
-      {fields.map((field, index) => (
-        <Form.Item
-          className={flex && "p-0 m-0"}
-          key={index}
-          label={field.label}
-          tooltip={field.tooltip || false}
-          name={field.name}
-          valuePropName={field.type === "file" ? "file" : "value"}
-          rules={[
-            {
-              required: field.required,
-              type: field.type,
-              ...(field.type === "rut"
-                ? { validator: (_, value) => validateRut(value) }
-                : {}),
-              message: `El campo ${field.label} es requerido!`,
-            },
-          ]}
-        >
-          {getInput(field, fields.filter(field => !field.show_disabled).length - 1 === index - fields.filter(field => field.show_disabled).length)}
-        </Form.Item>
-      ))}
+      {/* Si fields es un array de dos niveles, agrupar por fila */}
+      {Array.isArray(fields[0])
+        ? fields.map((fila, filaIdx) => (
+            <div
+              key={filaIdx}
+              className="flex flex-row flex-wrap gap-2 w-full"
+              style={{ width: "100%", flexWrap: "wrap" }}
+            >
+              {fila.map((field, index) => (
+                <div
+                  key={field.name || index}
+                  className="flex-1 min-w-[180px] w-full"
+                  style={{
+                    flex: 1,
+                    minWidth: 180,
+                    maxWidth: "100%",
+                  }}
+                >
+                  <Form.Item
+                    className={flex && "p-0 m-0"}
+                    label={field.label}
+                    tooltip={field.tooltip || false}
+                    name={field.name}
+                    valuePropName={field.type === "file" ? "file" : "value"}
+                    rules={[
+                      {
+                        required: field.required,
+                        type: field.type,
+                        ...(field.type === "rut"
+                          ? { validator: (_, value) => validateRut(value) }
+                          : {}),
+                        message: `El campo ${field.label} es requerido!`,
+                      },
+                    ]}
+                  >
+                    {getInput(
+                      field,
+                      fila.filter(f => !f.show_disabled).length - 1 ===
+                        index - fila.filter(f => f.show_disabled).length
+                    )}
+                  </Form.Item>
+                </div>
+              ))}
+            </div>
+          ))
+        : fields.map((field, index) => (
+            <Form.Item
+              className={flex && "p-0 m-0"}
+              key={field.name || index}
+              label={field.label}
+              tooltip={field.tooltip || false}
+              name={field.name}
+              valuePropName={field.type === "file" ? "file" : "value"}
+              rules={[
+                {
+                  required: field.required,
+                  type: field.type,
+                  ...(field.type === "rut"
+                    ? { validator: (_, value) => validateRut(value) }
+                    : {}),
+                  message: `El campo ${field.label} es requerido!`,
+                },
+              ]}
+            >
+              {getInput(
+                field,
+                fields.filter(f => !f.show_disabled).length - 1 ===
+                  index - fields.filter(f => f.show_disabled).length
+              )}
+            </Form.Item>
+          ))}
       {hiddenFields && hiddenFields.length > 0 && hiddenFields.map((field) => {
         return (
           <Form.Item key={v4()} name={field} hidden><Input /></Form.Item>

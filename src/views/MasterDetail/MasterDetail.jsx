@@ -30,7 +30,7 @@ const MasterDetail = ({
 
     const {
         mutate: saveRecord, isPending: isSavingLoading, isError: isSavingError, error: saveError
-    } = useSaveRecord(`${path}/details/${recordParams.get(mdPk)}`, title);
+    } = useSaveRecord(`${path}/details/${recordParams.get(mdPk)}`, title, extraParams);
 
 
     // Initial data
@@ -56,6 +56,7 @@ const MasterDetail = ({
             detailsForm.resetFields();
         }
     }, [header_structure, detail_structure])
+
 
 
     // Header Handler
@@ -205,7 +206,11 @@ const MasterDetail = ({
                 <div className="flex flex-wrap">
                     <CustomForm
                         form={headerForm}
-                        fields={header_structure?.filter(item => item.in_form)}
+                        fields={
+                            Array.isArray(header_structure?.[0]) 
+                                ? header_structure.map(arr => arr.filter(item => item.in_form))
+                                : header_structure?.filter(item => item.in_form)
+                        }
                         flex={true}
                         onFinish={handleSave}
                         hiddenFields={[header_pk]}
@@ -244,7 +249,8 @@ const MasterDetail = ({
                     <Divider style={{ margin: "5px 0 5px 0", padding: "0px" }} />
                     <ClearButton onClick={() => detailsForm.resetFields()} />
                 </div>
-                <Tabs
+                <Tabs 
+                    className="w-full"
                     type="card"
                     onChange={handleSelectedTab}
                     defaultActiveKey={selectedTab}
