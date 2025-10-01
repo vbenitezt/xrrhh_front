@@ -86,7 +86,7 @@ const MasterDetail = ({
     // Tabs handler
     useEffect(() => {
         if (detail_structure) {
-            setSelectedTab(detail_structure[0].name);
+            setSelectedTab(detail_structure[0]?.name);
         }
     }, [detail_structure])
 
@@ -207,9 +207,11 @@ const MasterDetail = ({
                     <CustomForm
                         form={headerForm}
                         fields={
+                            Array.isArray(header_structure)?
                             Array.isArray(header_structure?.[0]) 
                                 ? header_structure.map(arr => arr.filter(item => item.in_form))
                                 : header_structure?.filter(item => item.in_form)
+                                : Object.fromEntries(Object.entries(header_structure || {}).map(([grupo, campos]) => [grupo,campos.filter(item => item.in_form)]))
                         }
                         flex={true}
                         onFinish={handleSave}

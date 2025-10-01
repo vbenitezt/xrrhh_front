@@ -59,6 +59,7 @@ const Empleado = () => {
             headTitle="Maestro de Empleados"
             getExtraActions={getExtraActions}
             // Deshabilitar edición modal para fomentar uso del MasterDetail
+            customAddingAction={()=> setSearchParams({cod_empleado: -1})}
             disableEdition={false}
         />
     );

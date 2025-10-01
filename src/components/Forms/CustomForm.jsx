@@ -33,6 +33,36 @@ const CustomForm = ({
     onFinish({ ...values });
   };
 
+  const getFormItem = (field, isLast, index) => {
+    return <Form.Item
+                    className={flex && "p-0 m-0"}
+                    label={field.label}
+                    tooltip={field.tooltip || false}
+                    name={field.name}
+                    valuePropName={field.type === "file" ? "file" : "value"}
+                    rules={[
+                {
+                  required: field.required ,
+                  ...(field.type === "select" 
+                    ? {} 
+                    : { type: field.type }),
+                  ...(field.type === "rut"
+                    ? { validator: (_, value) => validateRut(value) }
+                    : {}),
+                  message: `El campo ${field.label} es requerido!`,
+                },
+              ]}
+                    style={{ marginBottom: 8 }} // Reducir el espacio entre el label y el componente
+                    labelCol={{ style: { marginBottom: 0, paddingBottom: 0 } }} // Opcional: aún menos espacio
+                    {...(index ? { key: field.name || index } : {})}
+                  >
+                    {getInput(
+                      field,
+                      isLast
+                    )}
+                  </Form.Item>
+  }
+
   const getInput = (field, isLast = false) => {
     if (field.type === "select") {
       const calculateWidth = () => {
@@ -82,6 +112,19 @@ const CustomForm = ({
       return Promise.resolve();
     }
   };
+
+  const validaFields = (fields) => {
+    if (!Array.isArray(fields)) {
+        console.log("Es un Objeto", fields)
+        // alert("Es un Objeto"+ fields)
+      } else if (Array.isArray(fields[0])) {
+        console.log("Array Ordenado", fields)
+        // alert("Es objeto"+ JSON.stringify(fields[0]))
+      } else {
+        console.log("Es array Desordenado", fields)
+        // alert("Es array Desordenado"+ JSON.stringify(fields[0]))
+      }
+  }
 
   const handleRutChange = (e) => {
     form.setFieldValue(e.target.id, ChileanRutify.formatRut(e.target.value));
@@ -133,8 +176,31 @@ const CustomForm = ({
       layout={flex ? "vertical" : "horizontal"}
       {...(flex ? {} : normalFormProps)}
     >
+      {validaFields(fields)}
       {/* Si fields es un array de dos niveles, agrupar por fila */}
-      {Array.isArray(fields[0])
+      
+      {!Array.isArray(fields)
+        ? Object.keys(fields).map((key)=> (
+          <div
+              key={key}
+              className="flex flex-row flex-wrap gap-2 w-full">
+              <h3 style={{ width: "100%", marginBottom: "0px", paddingBottom: "2px", borderBottom: "1px solid #d9d9d9" }}>{key}</h3>
+              {fields[key].map((field, index) => (            
+              <div
+                  key={field.name || index}
+                  className="flex-1 min-w-[180px] w-full"
+                  style={{
+                    flex: 1,
+                    minWidth: 180,
+                    maxWidth: "100%",
+                  }}
+                >                   
+                  {getFormItem(field, 1, index)}
+                </div>
+        ))}
+        </div>
+        ))
+        :Array.isArray(fields[0])
         ? fields.map((fila, filaIdx) => (
             <div
               key={filaIdx}
@@ -150,61 +216,16 @@ const CustomForm = ({
                     minWidth: 180,
                     maxWidth: "100%",
                   }}
-                >
-                  <Form.Item
-                    className={flex && "p-0 m-0"}
-                    label={field.label}
-                    tooltip={field.tooltip || false}
-                    name={field.name}
-                    valuePropName={field.type === "file" ? "file" : "value"}
-                    rules={[
-                      {
-                        required: field.required,
-                        type: field.type,
-                        ...(field.type === "rut"
-                          ? { validator: (_, value) => validateRut(value) }
-                          : {}),
-                        message: `El campo ${field.label} es requerido!`,
-                      },
-                    ]}
-                    style={{ marginBottom: 8 }} // Reducir el espacio entre el label y el componente
-                    labelCol={{ style: { marginBottom: 0, paddingBottom: 0 } }} // Opcional: aún menos espacio
-                  >
-                    {getInput(
-                      field,
-                      fila.filter(f => !f.show_disabled).length - 1 ===
-                        index - fila.filter(f => f.show_disabled).length
-                    )}
-                  </Form.Item>
+                >                   
+                  {getFormItem(field, fila.filter(f => !f.show_disabled).length - 1 ===
+                        index - fila.filter(f => f.show_disabled).length, index)}
                 </div>
               ))}
             </div>
           ))
         : fields.map((field, index) => (
-            <Form.Item
-              className={flex && "p-0 m-0"}
-              key={field.name || index}
-              label={field.label}
-              tooltip={field.tooltip || false}
-              name={field.name}
-              valuePropName={field.type === "file" ? "file" : "value"}
-              rules={[
-                {
-                  required: field.required,
-                  type: field.type,
-                  ...(field.type === "rut"
-                    ? { validator: (_, value) => validateRut(value) }
-                    : {}),
-                  message: `El campo ${field.label} es requerido!`,
-                },
-              ]}
-            >
-              {getInput(
-                field,
-                fields.filter(f => !f.show_disabled).length - 1 ===
-                  index - fields.filter(f => f.show_disabled).length
-              )}
-            </Form.Item>
+            getFormItem(field, fields.filter(f => !f.show_disabled).length - 1 ===
+              index - fields.filter(f => f.show_disabled).length, index)
           ))}
       {hiddenFields && hiddenFields.length > 0 && hiddenFields.map((field) => {
         return (
