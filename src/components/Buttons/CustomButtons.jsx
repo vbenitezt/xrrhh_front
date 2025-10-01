@@ -20,7 +20,7 @@ import { TbSitemap } from "react-icons/tb";
 
 export const CircleButton = ({ icon = <QuestionOutlined />, title = "", ...props }) => {
   return (
-    <Tooltip title={title} getPopupContainer={(trigger) => {return trigger.parentNode}}>
+    <Tooltip title={title} placement="top" getPopupContainer={(trigger) => {return trigger.body}}>
       <Button
         shape="circle"
         type="default"

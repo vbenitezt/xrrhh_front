@@ -167,6 +167,8 @@ const CustomForm = ({
                         message: `El campo ${field.label} es requerido!`,
                       },
                     ]}
+                    style={{ marginBottom: 8 }} // Reducir el espacio entre el label y el componente
+                    labelCol={{ style: { marginBottom: 0, paddingBottom: 0 } }} // Opcional: aún menos espacio
                   >
                     {getInput(
                       field,
