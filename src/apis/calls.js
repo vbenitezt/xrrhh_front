@@ -33,7 +33,7 @@ export const axiosGet = async (uri, params) => {
     headers: {
       "Content-Type": "application/json",
     },
-    params,
+    params: {rut_company: "RUT_COMPAÑIA" },
   });
   return data;
 };

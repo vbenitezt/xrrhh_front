@@ -10,6 +10,7 @@ import {
   Upload,
   Button,
 } from "antd";
+import DinamycSelect from "../Select/DinamycSelect";
 import ChileanRutify from "chilean-rutify";
 import { UploadOutlined } from "@ant-design/icons";
 import { v4 } from "uuid";
@@ -71,24 +72,25 @@ const CustomForm = ({
         return `${Math.round(averageWidth * 10)}px`;
       };
       return (
-        <Select
-          showSearch
-          allowClear
-          mode={field.isMulti && "multiple"}
-          style={{ minWidth: `${calculateWidth()}`, width: "100%", marginTop: "4px" }}
-          placeholder={field.label}
-          optionFilterProp="children"
-          filterOption={(input, option) =>
-            option.props.children.toLowerCase().indexOf(input.toLowerCase()) >=
-            0
-          }
-        >
-          {field.options.map((option) => (
-            <Select.Option key={option.value} value={option.value}>
-              {option.label}
-            </Select.Option>
-          ))}
-        </Select>
+        <DinamycSelect field={field} calculateWidth={calculateWidth} />
+        // <Select
+        //   showSearch
+        //   allowClear
+        //   mode={field.isMulti && "multiple"}
+        //   style={{ minWidth: `${calculateWidth()}`, width: "100%", marginTop: "4px" }}
+        //   placeholder={field.label}
+        //   optionFilterProp="children"
+        //   filterOption={(input, option) =>
+        //     option.props.children.toLowerCase().indexOf(input.toLowerCase()) >=
+        //     0
+        //   }
+        // >
+        //   {field.options.map((option) => (
+        //     <Select.Option key={option.value} value={option.value}>
+        //       {option.label}
+        //     </Select.Option>
+        //   ))}
+        // </Select>
       );
     } else if (field.type === "file") {
       return (
@@ -133,7 +135,7 @@ const CustomForm = ({
     const inputProps = {
       onPressEnter: isLast ? () => form.submit() : undefined,
       className: "form-input mt-1 block w-full",
-      style: { width: "100%" },
+      style: { width: field.type === "date" ? "150px" : "100%" },
       size: "small",
       disabled: field.show_disabled
     };
@@ -143,7 +145,7 @@ const CustomForm = ({
       password: <Input.Password visibilityToggle={false} {...inputProps} />,
       boolean: <Switch onPressEnter={isLast ? () => form.submit() : () => { }} />,
       rut: <Input onChange={handleRutChange} maxLength={12} {...inputProps} />,
-      date: <DatePicker {...inputProps} format="DD-MM-YYYY" />,
+      date: <DatePicker {...inputProps} format="DD-MM-YYYY" max-width="20px" />,
       time: <TimePicker format="HH:mm" {...inputProps} />,
       dateRange: <RangePicker {...inputProps} />,
       integer: <InputNumber {...inputProps} min={field.min} max={field.max} />,
