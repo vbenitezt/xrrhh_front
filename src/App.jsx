@@ -11,6 +11,19 @@ import { useThemeStore } from "./common/store/themeStore";
 import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
 import "antd/dist/reset.css";
 
+const flattenRoutes = (routes = []) =>
+  routes.reduce((acc, route) => {
+    if (route?.type === "route") {
+      return [...acc, route];
+    }
+
+    if (route?.children?.length) {
+      return [...acc, ...flattenRoutes(route.children)];
+    }
+
+    return acc;
+  }, []);
+
 function App() {
   const { defaultAlgorithm, darkAlgorithm } = theme;
 
@@ -18,22 +31,18 @@ function App() {
 
   const { theme: currentTheme } = useThemeStore();
 
-  const routes = getRoutes({ profile }).map((route, index) => {
-    if (route.type === "route") {
-      return (
-        <Route
-          path={route.path}
-          element={
-            <Layer>
-              <route.component {...(route.props ?? {})}/>
-            </Layer>
-          }
-          key={index}
-          exact
-        />
-      );
-    }
-  });
+  const routes = flattenRoutes(getRoutes({ profile })).map((route, index) => (
+    <Route
+      path={route.path}
+      element={
+        <Layer>
+          <route.component {...(route.props ?? {})} />
+        </Layer>
+      }
+      key={index}
+      exact
+    />
+  ));
 
   return (
     <BrowserRouter>

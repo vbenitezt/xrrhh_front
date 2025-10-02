@@ -1,33 +1,42 @@
-import { Divider } from "antd";
 import getRoutes from "../../routes";
 
+const renderIcon = (IconComponent) => {
+  if (!IconComponent) return undefined;
+  return <IconComponent size="1.4em" />;
+};
 
-export const sidebarItems = ({ profile, collapsed }) => {
-  const routes = getRoutes({profile}).map((route, index) => {
-    if (route.type === "divider") {
-      return {
-        type: "group",
-        path: route.path,
-        label: <Divider style={{ marginBottom: "0px" }} orientation="left">{!collapsed && route.label}</Divider>
+const buildMenuItems = (items = []) =>
+  items
+    .filter(Boolean)
+    .map((route, index) => {
+      if (route.type === "menu" && route.insideBar && route.children?.length) {
+        const key = route.key ?? `menu-${index}`;
+        return {
+          key,
+          icon: renderIcon(route.icon),
+          label: route.label,
+          children: buildMenuItems(route.children),
+        };
       }
-    }
-    if (route.insideBar) {
-      return {
-        key: String(index + 1),
-        icon: <route.icon className={`${collapsed && "w-full h-full p-0 m-0"}`} size="1.5em" />,
-        path: route.path,
-        label: <a href={route.path}>{route.label}</a>,
-        ...(route.children && route.children.length > 0 ? {
-          children: route.children.map((subRoute, subIndex) => {
-            return {
-              key: `${index + 1}${subIndex + 1}`,
-              label: <a href={subRoute.path}>{subRoute.label}</a>,
-              icon: route.icon,
-            }
-          })
-        } : {}),
-      };
-    }
-  })
-  return routes;
-}
+
+      if (route.type === "route" && route.insideBar) {
+        return {
+          key: route.path,
+          icon: renderIcon(route.icon),
+          label: route.label,
+        };
+      }
+
+      if (route.children?.length) {
+        return buildMenuItems(route.children);
+      }
+
+      return null;
+    })
+    .flat()
+    .filter(Boolean);
+
+export const sidebarItems = ({ profile }) => {
+  const routes = getRoutes({ profile });
+  return buildMenuItems(routes);
+};

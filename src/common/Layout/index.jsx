@@ -126,7 +126,11 @@ const Layer = ({ children }) => {
           onClose={() => setOpenDrawer(false)}
           placement="left"
         >
-          <AppMenu profile={profile} collapsed={collapsed} />
+          <AppMenu
+            profile={profile}
+            collapsed={false}
+            onNavigate={() => setOpenDrawer(false)}
+          />
         </Drawer>
       </Sider>
       <Layout className="w-screen h-screen">
@@ -200,26 +204,80 @@ const Layer = ({ children }) => {
   );
 };
 
-const AppMenu = ({ className, profile, collapsed }) => {
+const AppMenu = ({ className, profile, collapsed, onNavigate }) => {
   const location = useLocation();
-  const [selectedKeys, setselectedKeys] = useState([]);
-  const items = useMemo(() => sidebarItems({ profile, collapsed }), [profile, collapsed]);
+  const navigate = useNavigate();
+  const [selectedKeys, setSelectedKeys] = useState([]);
+  const [openKeys, setOpenKeys] = useState([]);
+  const items = useMemo(() => sidebarItems({ profile }), [profile]);
+
+  const findItemWithParents = useMemo(() => {
+    const traverse = (menuItems = [], targetKey, parents = []) => {
+      for (const item of menuItems) {
+        if (item.key === targetKey) {
+          return { item, parents };
+        }
+
+        if (item.children?.length) {
+          const result = traverse(item.children, targetKey, [...parents, item.key]);
+          if (result) {
+            return result;
+          }
+        }
+      }
+      return null;
+    };
+
+    return traverse;
+  }, []);
 
   useEffect(() => {
-    const item = items.find((item) => location.pathname === item?.path)
-    const index = items.indexOf(item)
-    setselectedKeys([
-      String(index + 1)
-    ])
-  }, [location.pathname, items])
+    const match = findItemWithParents(items, location.pathname);
+
+    if (match?.item) {
+      setSelectedKeys([match.item.key]);
+      if (!collapsed) {
+        setOpenKeys(match.parents);
+      }
+    } else {
+      setSelectedKeys([]);
+      if (!collapsed) {
+        setOpenKeys([]);
+      }
+    }
+  }, [collapsed, items, location.pathname, findItemWithParents]);
+
+  useEffect(() => {
+    if (collapsed) {
+      setOpenKeys([]);
+    }
+  }, [collapsed]);
+
+  const handleMenuClick = ({ key }) => {
+    if (key) {
+      navigate(key);
+      if (typeof onNavigate === "function") {
+        onNavigate();
+      }
+    }
+  };
+
+  const handleOpenChange = (keys) => {
+    if (!collapsed) {
+      setOpenKeys(keys);
+    }
+  };
 
   return (
     <Menu
       className={`overflow-y-auto h-[calc(100vh-100px)] ${className}`}
-      breakpoint="lg"
-      collapsedWidth="0"
+      mode="inline"
       selectedKeys={selectedKeys}
-      // mode="inline"
+      openKeys={collapsed ? [] : openKeys}
+      inlineCollapsed={collapsed}
+      onOpenChange={handleOpenChange}
+      onClick={handleMenuClick}
+      style={{ borderInlineEnd: 0, background: "transparent" }}
       items={items}
     />
   )
