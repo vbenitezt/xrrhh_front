@@ -99,7 +99,7 @@ const Layer = ({ children }) => {
       <Sider
         className="hidden h-full sm:block"
         style={{ background: colorBgContainer }}
-        width={200}
+        width={300}
         trigger={null}
         collapsed={collapsed}
       >

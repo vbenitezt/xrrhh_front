@@ -71,11 +71,11 @@ function App() {
             <Routes>
               <Route exact path="/" element={<Login />} />
               {/* <Route element={<ProtectedRoute isAllowed={isAuth} />}> */}
-                {routes}
+              {routes}
               {/* </Route> */}
               <Route path="*" element={<NotFound />} />
             </Routes>
-            {process.env.NODE_ENV === 'development' && <ReactQueryDevtools initialIsOpen={false} />}
+            <ReactQueryDevtools initialIsOpen={false} />
           </ReactQueryProvider>
         </AntApp>
       </ConfigProvider>
