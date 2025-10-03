@@ -281,6 +281,7 @@ const MasterDetail = ({
                                                 setEditing: handleEditItem,
                                                 setIsModalOpen: (e) => { },
                                                 fields_structure: tab.structure,
+                                                tableData: data[tab.name] ?? [],
                                                 getExtraActions: (e) => { },
                                                 // fromMasterDetail: true,
                                             })}

@@ -114,6 +114,7 @@ const Master = ({
           setEditing: customEditingAction ? customEditingAction : setEditing,
           setIsModalOpen,
           fields_structure,
+          tableData: data,
           getExtraActions,
           fromMasterDetail,
           disableEdition,

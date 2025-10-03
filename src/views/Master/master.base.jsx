@@ -15,6 +15,7 @@ export const makeColumns = ({
   setEditing,
   setIsModalOpen,
   fields_structure,
+  tableData = [],
   getExtraActions = () => { },
   fromMasterDetail = false,
   disableEdition = false,
@@ -23,10 +24,101 @@ export const makeColumns = ({
     return [];
   }
   let columns = fields_structure.filter(item => item.in_table || item.field_show).map((item) => {
+    const isFieldShow = Boolean(item.field_show);
+    const fieldShowPath = isFieldShow ? item.field_show.split(".") : [];
+    const structureOptions = Array.isArray(item.options)
+      ? item.options.map((option) => ({
+        value: option?.value ?? option?.id ?? option?.key ?? option,
+        label:
+          option?.label ??
+          option?.text ??
+          option?.name ??
+          option?.nombre ??
+          String(option?.value ?? option),
+      }))
+      : [];
+
+    const dataOptionsMap = tableData.reduce((acc, row) => {
+      if (!row || !isFieldShow) {
+        return acc;
+      }
+
+      const optionValue = row?.[item.name];
+      if (optionValue === undefined || optionValue === null) {
+        return acc;
+      }
+
+      const optionLabel = fieldShowPath.reduce((current, segment) => {
+        if (current === undefined || current === null) {
+          return current;
+        }
+        return current[segment];
+      }, row);
+
+      if (optionLabel === undefined || optionLabel === null) {
+        return acc;
+      }
+
+      if (!acc.has(optionValue)) {
+        acc.set(optionValue, optionLabel);
+      }
+
+      return acc;
+    }, new Map());
+
+    const dataOptions = Array.from(dataOptionsMap.entries()).map(
+      ([value, label]) => ({ value, label })
+    );
+
+    let filterOptions = structureOptions.length > 0 ? structureOptions : dataOptions;
+
+    if (item.type === "boolean") {
+      filterOptions = [
+        { value: true, label: "SI" },
+        { value: false, label: "NO" },
+      ];
+    }
+
+    const isNumericType = ["number", "integer", "decimal", "float"].includes(
+      item.type
+    );
+    const isDateType = item.type === "date" || item.name.includes("date");
+
+    const filterMeta = isFieldShow
+      ? {
+        type: "select",
+        operator: "eq",
+        options: filterOptions,
+      }
+      : item.type === "boolean"
+        ? {
+          type: "select",
+          operator: "eq",
+          options: filterOptions,
+        }
+        : isNumericType
+          ? {
+            type: "number",
+            operator: "btw",
+          }
+          : isDateType
+            ? {
+              type: "date",
+              operator: "btw",
+              format: "YYYY-MM-DD",
+            }
+            : {
+              type: "text",
+              operator: "ilk",
+            };
+
     return {
       title: item.label,
       dataIndex: item.name,
       key: item.name,
+      filterType: filterMeta.type,
+      filterOptions,
+      filterMeta,
       ...(["number", "integer"].includes(item.type)
         ? {
           align: "right",
