@@ -4,7 +4,6 @@ import {
   Form,
   Input,
   InputNumber,
-  Select,
   Switch,
   TimePicker,
   Upload,
@@ -17,6 +16,129 @@ import { v4 } from "uuid";
 
 const { RangePicker } = DatePicker;
 const { TextArea } = Input;
+
+const normalizeCandidate = (value) => {
+  if (!value && value !== 0) {
+    return "";
+  }
+  return String(value).toLowerCase();
+};
+
+const resolveFieldType = (field) => {
+  const candidates = [
+    field.widget,
+    field.component,
+    field.control,
+    field.data_type,
+    field.type,
+  ];
+
+  for (const candidate of candidates) {
+    const normalized = normalizeCandidate(candidate);
+    if (!normalized) {
+      continue;
+    }
+
+    if (normalized.includes("daterange") || (normalized.includes("date") && normalized.includes("range"))) {
+      return "dateRange";
+    }
+    if (normalized.includes("datetime")) {
+      return "datetime";
+    }
+    if (normalized.includes("date")) {
+      return "date";
+    }
+    if (normalized.includes("time")) {
+      return "time";
+    }
+    if (normalized.includes("textarea") || normalized.includes("text_area")) {
+      return "textarea";
+    }
+    if (
+      normalized.includes("select") ||
+      normalized.includes("combo") ||
+      normalized.includes("entry") ||
+      normalized.includes("completion")
+    ) {
+      return "select";
+    }
+    if (normalized.includes("boolean") || normalized.includes("switch") || normalized.includes("checkbox")) {
+      return "boolean";
+    }
+    if (normalized.includes("password")) {
+      return "password";
+    }
+    if (normalized.includes("email")) {
+      return "email";
+    }
+    if (normalized.includes("rut")) {
+      return "rut";
+    }
+    if (normalized.includes("file") || normalized.includes("upload")) {
+      return "file";
+    }
+    if (normalized.includes("integer")) {
+      return "integer";
+    }
+    if (normalized.includes("decimal") || normalized.includes("float")) {
+      return "number";
+    }
+    if (normalized.includes("number")) {
+      return "number";
+    }
+  }
+
+  return "string";
+};
+
+const isVisibleField = (field) => {
+  if (field?.visible === false) {
+    return false;
+  }
+  if (field?.in_form === false) {
+    return false;
+  }
+  return true;
+};
+
+const isEditableField = (field) => {
+  if (field?.editable === false) {
+    return false;
+  }
+  if (field?.show_disabled === true) {
+    return false;
+  }
+  return true;
+};
+
+const getFieldName = (field, fallback) => {
+  return field?.field ?? field?.name ?? field?.key ?? fallback;
+};
+
+const getLastEditableFieldName = (fields = []) => {
+  const editableFields = fields.filter(
+    (item) => isVisibleField(item) && isEditableField(item)
+  );
+  const last = editableFields[editableFields.length - 1];
+  return last ? getFieldName(last) : null;
+};
+
+const calculateNumberStep = (field) => {
+  if (field?.step) {
+    return field.step;
+  }
+
+  if (field?.precision) {
+    const precision = Number(field.precision);
+    if (Number.isFinite(precision) && precision > 0) {
+      return Number(`0.${"0".repeat(precision - 1)}1`);
+    }
+  }
+
+  return 0.1;
+};
+
+const getFieldTooltip = (field) => field?.tooltips ?? field?.tooltip ?? false;
 
 const CustomForm = ({
   onFinish,
@@ -34,126 +156,188 @@ const CustomForm = ({
     onFinish({ ...values });
   };
 
-  const getFormItem = (field, isLast, index) => {
-    return <Form.Item
-                    className={flex && "p-0 m-0"}
-                    label={field.label}
-                    tooltip={field.tooltip || false}
-                    name={field.name}
-                    valuePropName={field.type === "file" ? "file" : "value"}
-                    rules={[
-                {
-                  required: field.required ,
-                  ...(field.type === "select" 
-                    ? {} 
-                    : { type: field.type }),
-                  ...(field.type === "rut"
-                    ? { validator: (_, value) => validateRut(value) }
-                    : {}),
-                  message: `El campo ${field.label} es requerido!`,
-                },
-              ]}
-                    style={{ marginBottom: 8 }} // Reducir el espacio entre el label y el componente
-                    labelCol={{ style: { marginBottom: 0, paddingBottom: 0 } }} // Opcional: aún menos espacio
-                    {...(index ? { key: field.name || index } : {})}
-                  >
-                    {getInput(
-                      field,
-                      isLast
-                    )}
-                  </Form.Item>
-  }
+  const getInput = (field, fieldType, submitOnEnter = false) => {
+    const disabled = !isEditableField(field);
 
-  const getInput = (field, isLast = false) => {
-    if (field.type === "select") {
+    if (fieldType === "select") {
       const calculateWidth = () => {
-        const totalWidth = field.options.reduce((sum, option) => sum + option.label.length, 0);
+        if (!Array.isArray(field.options) || field.options.length === 0) {
+          return "180px";
+        }
+        const totalWidth = field.options.reduce((sum, option) => {
+          const label = option?.label ?? option?.text ?? option?.name ?? option?.nombre ?? option;
+          return sum + String(label ?? "").length;
+        }, 0);
         const averageWidth = totalWidth / field.options.length;
-        return `${Math.round(averageWidth * 10)}px`;
+        return `${Math.max(120, Math.round(averageWidth * 10))}px`;
       };
+
       return (
-        <DinamycSelect field={field} calculateWidth={calculateWidth} />
-        // <Select
-        //   showSearch
-        //   allowClear
-        //   mode={field.isMulti && "multiple"}
-        //   style={{ minWidth: `${calculateWidth()}`, width: "100%", marginTop: "4px" }}
-        //   placeholder={field.label}
-        //   optionFilterProp="children"
-        //   filterOption={(input, option) =>
-        //     option.props.children.toLowerCase().indexOf(input.toLowerCase()) >=
-        //     0
-        //   }
-        // >
-        //   {field.options.map((option) => (
-        //     <Select.Option key={option.value} value={option.value}>
-        //       {option.label}
-        //     </Select.Option>
-        //   ))}
-        // </Select>
+        <DinamycSelect
+          field={field}
+          calculateWidth={calculateWidth}
+          disabled={disabled}
+        />
       );
-    } else if (field.type === "file") {
+    }
+
+    if (fieldType === "file") {
       return (
-        <Upload
-          multiple={false}
-        >
-          <Button style={{ width: "100%", marginTop: "4px" }} icon={<UploadOutlined />}>
+        <Upload multiple={false} disabled={disabled}>
+          <Button
+            style={{ width: "100%", marginTop: "4px" }}
+            icon={<UploadOutlined />}
+            disabled={disabled}
+          >
             Click para Cargar
           </Button>
         </Upload>
       );
-    } else {
-      return getComponent(field, isLast);
     }
+
+    return getComponent(field, fieldType, submitOnEnter, disabled);
   };
 
   const validateRut = (value) => {
-    if (!ChileanRutify.validRut(value) && value.length > 4) {
-      return Promise.reject("Invalid Rut");
-    } else {
+    if (value === undefined || value === null || value === "") {
       return Promise.resolve();
     }
+    const normalizedValue = String(value);
+    if (!ChileanRutify.validRut(normalizedValue) && normalizedValue.length > 4) {
+      return Promise.reject("Invalid Rut");
+    }
+    return Promise.resolve();
   };
-
-  const validaFields = (fields) => {
-    if (!Array.isArray(fields)) {
-        console.log("Es un Objeto", fields)
-        // alert("Es un Objeto"+ fields)
-      } else if (Array.isArray(fields[0])) {
-        console.log("Array Ordenado", fields)
-        // alert("Es objeto"+ JSON.stringify(fields[0]))
-      } else {
-        console.log("Es array Desordenado", fields)
-        // alert("Es array Desordenado"+ JSON.stringify(fields[0]))
-      }
-  }
 
   const handleRutChange = (e) => {
     form.setFieldValue(e.target.id, ChileanRutify.formatRut(e.target.value));
   };
-  const getComponent = (field, isLast) => {
-    const inputProps = {
-      onPressEnter: isLast ? () => form.submit() : undefined,
+
+  const renderFormItem = (field, lastEditableFieldName, index) => {
+    if (!field || !isVisibleField(field)) {
+      return null;
+    }
+
+    const fieldName = getFieldName(field, index);
+    if (!fieldName) {
+      return null;
+    }
+
+    const fieldType = resolveFieldType(field);
+    const submitOnEnter =
+      lastEditableFieldName && fieldName === lastEditableFieldName;
+
+    const rules = [];
+    const isRequired = field?.not_null ?? field?.required ?? false;
+
+    if (isRequired) {
+      rules.push({
+        required: true,
+        message: `El campo ${field.label} es requerido!`,
+      });
+    }
+
+    if (fieldType === "rut") {
+      rules.push({ validator: (_, value) => validateRut(value) });
+    }
+
+    if (fieldType === "email") {
+      rules.push({
+        type: "email",
+        message: `El campo ${field.label} debe ser un correo válido!`,
+      });
+    }
+
+    const valuePropName =
+      fieldType === "boolean"
+        ? "checked"
+        : fieldType === "file"
+          ? "file"
+          : "value";
+
+    const initialValue =
+      field.default_value !== undefined ? field.default_value : field.initialValue;
+
+    return (
+      <Form.Item
+        key={fieldName || index}
+        className={flex ? "p-0 m-0" : undefined}
+        label={field.label}
+        tooltip={getFieldTooltip(field)}
+        name={fieldName}
+        valuePropName={valuePropName}
+        rules={rules}
+        style={{ marginBottom: 8 }}
+        labelCol={{ style: { marginBottom: 0, paddingBottom: 0 } }}
+        initialValue={initialValue}
+      >
+        {getInput(field, fieldType, submitOnEnter)}
+      </Form.Item>
+    );
+  };
+  const getComponent = (field, fieldType, submitOnEnter, disabled) => {
+    const sharedProps = {
+      onPressEnter: submitOnEnter ? () => form.submit() : undefined,
       className: "form-input mt-1 block w-full",
-      style: { width: field.type === "date" ? "150px" : "100%" },
+      style: {
+        width: ["date", "time", "datetime", "dateRange"].includes(fieldType)
+          ? "150px"
+          : "100%",
+      },
       size: "small",
-      disabled: field.show_disabled
+      disabled,
     };
-    const inputs = {
-      string: <Input {...inputProps} />,
-      email: <Input {...inputProps} />,
-      password: <Input.Password visibilityToggle={false} {...inputProps} />,
-      boolean: <Switch onPressEnter={isLast ? () => form.submit() : () => { }} />,
-      rut: <Input onChange={handleRutChange} maxLength={12} {...inputProps} />,
-      date: <DatePicker {...inputProps} format="DD-MM-YYYY" max-width="20px" />,
-      time: <TimePicker format="HH:mm" {...inputProps} />,
-      dateRange: <RangePicker {...inputProps} />,
-      integer: <InputNumber {...inputProps} min={field.min} max={field.max} />,
-      number: <InputNumber {...inputProps} step={0.1} min={field.min} max={field.max} />,
-      textarea: <TextArea {...inputProps} rows={4} />,
-    };
-    return inputs[field.type];
-  }
+
+    switch (fieldType) {
+      case "email":
+      case "string":
+        return <Input {...sharedProps} type={fieldType === "email" ? "email" : undefined} />;
+      case "password":
+        return <Input.Password visibilityToggle={false} {...sharedProps} />;
+      case "boolean":
+        return <Switch disabled={disabled} />;
+      case "rut":
+        return <Input {...sharedProps} onChange={handleRutChange} maxLength={12} />;
+      case "date":
+        return <DatePicker {...sharedProps} format={field?.format ?? "DD-MM-YYYY"} />;
+      case "datetime":
+        return (
+          <DatePicker
+            {...sharedProps}
+            format={field?.format ?? "DD-MM-YYYY HH:mm"}
+            showTime
+          />
+        );
+      case "time":
+        return <TimePicker {...sharedProps} format={field?.format ?? "HH:mm"} />;
+      case "dateRange":
+        return <RangePicker {...sharedProps} format={field?.format ?? "DD-MM-YYYY"} />;
+      case "integer":
+        return (
+          <InputNumber
+            {...sharedProps}
+            min={field?.min}
+            max={field?.max}
+            step={1}
+            style={{ width: "100%" }}
+          />
+        );
+      case "number":
+        return (
+          <InputNumber
+            {...sharedProps}
+            min={field?.min}
+            max={field?.max}
+            step={calculateNumberStep(field)}
+            style={{ width: "100%" }}
+          />
+        );
+      case "textarea":
+        return <TextArea {...sharedProps} rows={field?.rows ?? 4} />;
+      default:
+        return <Input {...sharedProps} />;
+    }
+  };
 
   const normalFormProps = {
     labelCol: {
@@ -178,57 +362,86 @@ const CustomForm = ({
       layout={flex ? "vertical" : "horizontal"}
       {...(flex ? {} : normalFormProps)}
     >
-      {validaFields(fields)}
-      {/* Si fields es un array de dos niveles, agrupar por fila */}
-      
-      {!Array.isArray(fields)
-        ? Object.keys(fields).map((key)=> (
-          <div
-              key={key}
-              className="flex flex-row flex-wrap gap-2 w-full">
-              <h3 style={{ width: "100%", marginBottom: "0px", paddingBottom: "2px", borderBottom: "1px solid #d9d9d9" }}>{key}</h3>
-              {fields[key].map((field, index) => (            
-              <div
-                  key={field.name || index}
-                  className="flex-1 min-w-[180px] w-full"
-                  style={{
-                    flex: 1,
-                    minWidth: 180,
-                    maxWidth: "100%",
-                  }}
-                >                   
-                  {getFormItem(field, 1, index)}
+      {
+        !Array.isArray(fields)
+          ? Object.keys(fields ?? {}).map((key) => {
+              const groupFields = (fields?.[key] ?? []).filter(isVisibleField);
+              if (!groupFields.length) {
+                return null;
+              }
+              const lastEditableFieldName = getLastEditableFieldName(groupFields);
+
+              return (
+                <div key={key} className="flex flex-row flex-wrap gap-2 w-full">
+                  <h3
+                    style={{
+                      width: "100%",
+                      marginBottom: "0px",
+                      paddingBottom: "2px",
+                      borderBottom: "1px solid #d9d9d9",
+                    }}
+                  >
+                    {key}
+                  </h3>
+                  {groupFields.map((field, index) => {
+                    const fieldName = getFieldName(field, index);
+                    return (
+                      <div
+                        key={fieldName || index}
+                        className="flex-1 min-w-[180px] w-full"
+                        style={{
+                          flex: 1,
+                          minWidth: 180,
+                          maxWidth: "100%",
+                        }}
+                      >
+                        {renderFormItem(field, lastEditableFieldName, index)}
+                      </div>
+                    );
+                  })}
                 </div>
-        ))}
-        </div>
-        ))
-        :Array.isArray(fields[0])
-        ? fields.map((fila, filaIdx) => (
-            <div
-              key={filaIdx}
-              className="flex flex-row flex-wrap gap-2 w-full"
-              style={{ width: "100%", flexWrap: "wrap" }}
-            >
-              {fila.map((field, index) => (
+              );
+            })
+          : Array.isArray(fields?.[0])
+          ? fields.map((row, rowIndex) => {
+              const visibleRowFields = row.filter(isVisibleField);
+              if (!visibleRowFields.length) {
+                return null;
+              }
+              const lastEditableFieldName = getLastEditableFieldName(visibleRowFields);
+
+              return (
                 <div
-                  key={field.name || index}
-                  className="flex-1 min-w-[180px] w-full"
-                  style={{
-                    flex: 1,
-                    minWidth: 180,
-                    maxWidth: "100%",
-                  }}
-                >                   
-                  {getFormItem(field, fila.filter(f => !f.show_disabled).length - 1 ===
-                        index - fila.filter(f => f.show_disabled).length, index)}
+                  key={rowIndex}
+                  className="flex flex-row flex-wrap gap-2 w-full"
+                  style={{ width: "100%", flexWrap: "wrap" }}
+                >
+                  {visibleRowFields.map((field, index) => {
+                    const fieldName = getFieldName(field, index);
+                    return (
+                      <div
+                        key={fieldName || index}
+                        className="flex-1 min-w-[180px] w-full"
+                        style={{
+                          flex: 1,
+                          minWidth: 180,
+                          maxWidth: "100%",
+                        }}
+                      >
+                        {renderFormItem(field, lastEditableFieldName, index)}
+                      </div>
+                    );
+                  })}
                 </div>
-              ))}
-            </div>
-          ))
-        : fields.map((field, index) => (
-            getFormItem(field, fields.filter(f => !f.show_disabled).length - 1 ===
-              index - fields.filter(f => f.show_disabled).length, index)
-          ))}
+              );
+            })
+          : (fields ?? [])
+              .filter(isVisibleField)
+              .map((field, index, list) => {
+                const lastEditableFieldName = getLastEditableFieldName(list);
+                return renderFormItem(field, lastEditableFieldName, index);
+              })
+      }
       {hiddenFields && hiddenFields.length > 0 && hiddenFields.map((field) => {
         return (
           <Form.Item key={v4()} name={field} hidden><Input /></Form.Item>

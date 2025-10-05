@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import useTablePagination from "../../common/store/tablePaginationStore";
 import CustomForm from "../../components/Forms/CustomForm";
 import BaseModal from "../../components/Modals/BaseModal";
@@ -7,6 +7,7 @@ import AntTable from "../../components/Tables/AntTable";
 import { Form } from "antd";
 import Spinner from "../../components/Loading/Spinner";
 import { makeColumns } from "./master.base";
+import { buildSubmissionPayload, filterFormStructure, normalizeStructure } from "../../utils/fieldStructure";
 import {
   useDeleteRecord,
   useGetPaginatedRecords,
@@ -28,7 +29,17 @@ const Master = ({
 
   const { data: response, isFetching } = useGetPaginatedRecords(path);
 
-  const { data, form: fields_structure } = response ? response : [];
+  const { data, form: rawFieldsStructure } = response ? response : {};
+
+  const normalizedFieldsStructure = useMemo(
+    () => normalizeStructure(rawFieldsStructure),
+    [rawFieldsStructure]
+  );
+
+  const formStructure = useMemo(
+    () => filterFormStructure(normalizedFieldsStructure),
+    [normalizedFieldsStructure]
+  );
 
   const { mutate: save, isPending: isSaving } = useSaveRecord(path, title);
   const { mutate: remove, isPending: isRemoving } = useDeleteRecord(
@@ -55,14 +66,21 @@ const Master = ({
   };
 
   const handleSubmit = (d) => {
-    const cuerpo = {
-      ...d,
-      ...(editing ? { [pk]: editing } : {}),
-    };
+    const payload = buildSubmissionPayload({
+      fields: normalizedFieldsStructure,
+      values: {
+        ...d,
+        ...(editing ? { [pk]: editing } : {}),
+      },
+    });
+
+    if (editing && payload[pk] === undefined) {
+      payload[pk] = editing;
+    }
 
     if (form.isFieldsTouched()) {
       save(
-        cuerpo,
+        payload,
         {
           onSuccess: () => {
             setIsModalOpen(false);
@@ -70,7 +88,7 @@ const Master = ({
             form.resetFields();
           }
         }
-      )
+      );
     }
 
   };
@@ -96,7 +114,7 @@ const Master = ({
             form={form}
             maxWidth={600}
             onFinish={handleSubmit}
-            fields={fields_structure?.filter(item => item.in_form)}
+            fields={formStructure}
             extraFormItems={extraFormItems}
           />
         }
@@ -113,7 +131,7 @@ const Master = ({
           remove,
           setEditing: customEditingAction ? customEditingAction : setEditing,
           setIsModalOpen,
-          fields_structure,
+          fields_structure: normalizedFieldsStructure,
           tableData: data,
           getExtraActions,
           fromMasterDetail,

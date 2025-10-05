@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { AddButton, ClearButton, CloseButton, EditButton, PreviousButton, RemoveButton, SaveButton } from "../../components/Buttons/CustomButtons";
 import { Divider, Popconfirm, Tabs } from "antd";
@@ -9,6 +9,15 @@ import AntTable from "../../components/Tables/AntTable";
 import { makeColumns } from "../Master/master.base";
 import CustomForm from "../../components/Forms/CustomForm";
 import dayjs from "dayjs";
+import { isEqual } from "lodash";
+import {
+    buildLayoutsData,
+    buildSubmissionPayload,
+    calculateFieldValues,
+    filterFormStructure,
+    flattenStructure,
+    normalizeStructure,
+} from "../../utils/fieldStructure";
 
 
 const MasterDetail = ({
@@ -28,34 +37,75 @@ const MasterDetail = ({
 
     const { header_pk, header_structure, header_data, detail_structure, hidden_fields } = masterDetailStructure ? masterDetailStructure : {};
 
+    const normalizedHeaderStructure = useMemo(
+        () => normalizeStructure(header_structure),
+        [header_structure]
+    );
+
+    const headerFormStructure = useMemo(
+        () => filterFormStructure(normalizedHeaderStructure),
+        [normalizedHeaderStructure]
+    );
+
+    const detailTabs = useMemo(() => {
+        if (!Array.isArray(detail_structure)) {
+            return [];
+        }
+        return detail_structure.map((tab) => ({
+            ...tab,
+            structure: normalizeStructure(tab.structure),
+            formStructure: filterFormStructure(tab.structure),
+        }));
+    }, [detail_structure]);
+
     const {
         mutate: saveRecord, isPending: isSavingLoading, isError: isSavingError, error: saveError
     } = useSaveRecord(`${path}/details/${recordParams.get(mdPk)}`, title, extraParams);
 
 
+    const recomputeHeaderValues = useCallback((nextData) => {
+        if (!normalizedHeaderStructure) {
+            return;
+        }
+
+        const layoutsData = buildLayoutsData(detailTabs, nextData);
+        const currentValues = headerForm.getFieldsValue(true);
+        const computedValues = calculateFieldValues({
+            fields: normalizedHeaderStructure,
+            values: currentValues,
+            layouts: layoutsData,
+        });
+
+        Object.entries(computedValues).forEach(([key, value]) => {
+            const currentValue = headerForm.getFieldValue(key);
+            if (!isEqual(currentValue, value)) {
+                headerForm.setFieldValue(key, value);
+            }
+        });
+    }, [detailTabs, headerForm, normalizedHeaderStructure]);
+
     // Initial data
     useEffect(() => {
-        if (header_data && detail_structure) {
-            // Header Data Setter
-            Object.keys(header_data).map(key => {
+        if (header_data && detailTabs.length) {
+            Object.keys(header_data).forEach(key => {
                 if (dayjs(header_data[key], "YYYY-MM-DD").isValid()) {
                     headerForm.setFieldValue(key, dayjs(header_data[key], "YYYY-MM-DD"));
                 } else {
                     headerForm.setFieldValue(key, header_data[key]);
                 }
 
-            })
-            // Tabs Data Setter
-            let newTabsData = {}
-            detail_structure.map(tab => {
+            });
+            const newTabsData = {};
+            detailTabs.forEach(tab => {
                 newTabsData[tab.name] = tab.data || [];
-            })
+            });
             setData(newTabsData);
+            recomputeHeaderValues(newTabsData);
         } else {
             headerForm.resetFields();
             detailsForm.resetFields();
         }
-    }, [header_structure, detail_structure])
+    }, [detailTabs, detailsForm, headerForm, header_data, recomputeHeaderValues]);
 
 
 
@@ -70,66 +120,137 @@ const MasterDetail = ({
             return acc;
         }, {});
 
-        const body = {
-            ...formattedValues,
-            ...data,
+        const layoutsData = buildLayoutsData(detailTabs, data);
+
+        const headerPayload = buildSubmissionPayload({
+            fields: normalizedHeaderStructure,
+            values: formattedValues,
+            layouts: layoutsData,
+        });
+
+        if (header_pk && formattedValues[header_pk] !== undefined) {
+            headerPayload[header_pk] = formattedValues[header_pk];
         }
+
+        const detailPayload = detailTabs.reduce((acc, tab) => {
+            const tabData = data[tab.name] ?? [];
+            acc[tab.name] = Array.isArray(tabData)
+                ? tabData.map((row) =>
+                    buildSubmissionPayload({ fields: tab.structure, values: row })
+                )
+                : [];
+            return acc;
+        }, {});
+
+        const body = {
+            ...headerPayload,
+            ...detailPayload,
+        };
 
         saveRecord(body, {
             onSuccess: (response) => {
                 setRecordParams({ [mdPk]: (response && response.header_data[mdPk]) ? response.header_data[mdPk] : "nuevo" });
             }
-        })
+        });
 
-    }
+    };
 
     // Tabs handler
     useEffect(() => {
-        if (detail_structure) {
-            setSelectedTab(detail_structure[0]?.name);
+        if (detailTabs.length) {
+            setSelectedTab(detailTabs[0]?.name);
         }
-    }, [detail_structure])
+    }, [detailTabs])
+
+    useEffect(() => {
+        if (!detailTabs.length) {
+            return;
+        }
+        recomputeHeaderValues(data);
+    }, [data, detailTabs, recomputeHeaderValues])
 
     const handleSelectedTab = (tab) => {
         setSelectedTab(tab);
     }
 
     const handleAddItem = (item) => {
-        const tabSelectedStructure = detail_structure.find(tab => tab.name === selectedTab).structure;
-        tabSelectedStructure.map(it => {
-            if (it.type === "select") {
-                item[it.field_show] = it.options.find((opt => opt.value === item[it.name]))?.label
+        const tabSelected = detailTabs.find(tab => tab.name === selectedTab);
+        if (!tabSelected) {
+            return;
+        }
+
+        const computedValues = calculateFieldValues({
+            fields: tabSelected.structure,
+            values: item,
+        });
+
+        const flatFields = flattenStructure(tabSelected.structure);
+
+        const rowValues = { ...item, ...computedValues };
+
+        flatFields.forEach((field) => {
+            if (field.field_show && Array.isArray(field.options)) {
+                const fieldName = field.field ?? field.name;
+                const selectedValue = rowValues[fieldName];
+                const match = field.options.find((opt) => {
+                    const optionValue = opt?.value ?? opt?.id ?? opt?.key ?? opt;
+                    return optionValue === selectedValue;
+                });
+                if (match) {
+                    rowValues[field.field_show] =
+                        match?.label ?? match?.text ?? match?.name ?? match?.nombre ?? match?.value ?? match;
+                }
             }
-        })
-        const newTabData = [...data[selectedTab], item]
-        setData({ ...data, ...{ [selectedTab]: newTabData } });
+        });
+
+        const tabData = data[selectedTab] ?? [];
+        const newTabData = [...tabData, rowValues];
+        const nextData = { ...data, [selectedTab]: newTabData };
+        setData(nextData);
+        recomputeHeaderValues(nextData);
         detailsForm.resetFields();
-    }
+    };
 
     const handleEditItem = (itemPk, insertFields = false) => {
-        const tabSelectedStructure = detail_structure.find(tab => tab.name === selectedTab);
-        const currentItem = data[selectedTab].find(it => it[tabSelectedStructure.pk] === itemPk);
-        const newTabData = data[selectedTab].filter(it => it[tabSelectedStructure.pk] !== itemPk);
-        setData({ ...data, ...{ [selectedTab]: newTabData } });
-        if (insertFields === true) {
+        const tabSelected = detailTabs.find(tab => tab.name === selectedTab);
+        if (!tabSelected) {
+            return;
+        }
+
+        const currentTabData = data[selectedTab] ?? [];
+        const currentItem = currentTabData.find(it => it[tabSelected.pk] === itemPk);
+        const newTabData = currentTabData.filter(it => it[tabSelected.pk] !== itemPk);
+        const nextData = { ...data, [selectedTab]: newTabData };
+        setData(nextData);
+        recomputeHeaderValues(nextData);
+        if (insertFields === true && currentItem) {
             detailsForm.setFieldsValue({
                 ...currentItem,
             });
         }
-    }
+    };
 
     const handleRemoveItem = (item, items) => {
-        const tabSelectedStructure = detail_structure.find(tab => tab.name === selectedTab);
+        const tabSelected = detailTabs.find(tab => tab.name === selectedTab);
+        if (!tabSelected) {
+            return;
+        }
+
+        const currentTabData = data[selectedTab] ?? [];
         let newTabData = [];
         if (items && items.length > 0) {
-            newTabData = data[selectedTab].filter(it => {
-                return !items.includes(it[tabSelectedStructure.pk])
+            newTabData = currentTabData.filter(it => {
+                return !items.includes(it[tabSelected.pk]);
             });
+        } else if (item) {
+            newTabData = currentTabData.filter(it => it[tabSelected.pk] !== item[tabSelected.pk]);
         } else {
-            newTabData = data[selectedTab].filter(it => it[tabSelectedStructure.pk] !== item[tabSelectedStructure.pk]);
+            newTabData = currentTabData;
         }
-        setData({ ...data, ...{ [selectedTab]: newTabData } });
-    }
+        const nextData = { ...data, [selectedTab]: newTabData };
+        setData(nextData);
+        recomputeHeaderValues(nextData);
+    };
 
     const handleExit = () => {
         setRecordParams({});
@@ -206,16 +327,10 @@ const MasterDetail = ({
                 <div className="flex flex-wrap">
                     <CustomForm
                         form={headerForm}
-                        fields={
-                            Array.isArray(header_structure)?
-                            Array.isArray(header_structure?.[0]) 
-                                ? header_structure.map(arr => arr.filter(item => item.in_form))
-                                : header_structure?.filter(item => item.in_form)
-                                : Object.fromEntries(Object.entries(header_structure || {}).map(([grupo, campos]) => [grupo,campos.filter(item => item.in_form)]))
-                        }
+                        fields={headerFormStructure}
                         flex={true}
                         onFinish={handleSave}
-                        hiddenFields={[header_pk]}
+                        hiddenFields={[header_pk, ...(hidden_fields ?? [])].filter(Boolean)}
                     />
                 </div>
             </div>
@@ -251,12 +366,12 @@ const MasterDetail = ({
                     <Divider style={{ margin: "5px 0 5px 0", padding: "0px" }} />
                     <ClearButton onClick={() => detailsForm.resetFields()} />
                 </div>
-                <Tabs 
+                <Tabs
                     className="w-full"
                     type="card"
                     onChange={handleSelectedTab}
-                    defaultActiveKey={selectedTab}
-                    items={detail_structure.map(tab => {
+                    activeKey={selectedTab}
+                    items={detailTabs.map(tab => {
                         return {
                             key: tab.name,
                             label: tab.label,
@@ -267,12 +382,12 @@ const MasterDetail = ({
                                         <CustomForm
                                             flex={true}
                                             form={detailsForm}
-                                            fields={tab.structure?.filter(item => item.in_form)}
+                                            fields={tab.formStructure}
                                             onFinish={handleAddItem}
                                             hiddenFields={tab.hide_detail_fields}
                                         />
                                         <AntTable
-                                            data={data[selectedTab]}
+                                            data={data[tab.name] ?? []}
                                             columns={makeColumns({
                                                 pk: tab.pk,
                                                 title: tab.label,

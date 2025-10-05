@@ -17,6 +17,8 @@ import { isEqual } from "lodash";
 import { formatNumber } from "../../utils/formatMoney";
 import useTablePagination from "../../common/store/tablePaginationStore";
 import dayjs from "dayjs";
+import { useQuery } from "@tanstack/react-query";
+import { axiosGet } from "../../apis/calls";
 
 const { Title, Text } = Typography;
 
@@ -26,7 +28,100 @@ const OPERATION_LABELS = {
   gte: "Mayor o igual a:",
   lte: "Menor o igual a:",
   btw: "Entre:",
-  btw: "Entre:",
+};
+
+const normalizeOption = (option) => {
+  if (option && typeof option === "object") {
+    const value =
+      option.value ?? option.id ?? option.key ?? option.codigo ?? option.code ?? option;
+    const label =
+      option.label ??
+      option.text ??
+      option.name ??
+      option.nombre ??
+      option.descripcion ??
+      option.desc ??
+      String(option.value ?? value ?? "");
+    return {
+      value,
+      label: String(label ?? value ?? ""),
+    };
+  }
+
+  return {
+    value: option,
+    label: String(option ?? ""),
+  };
+};
+
+const coerceOptionsArray = (options) => {
+  if (Array.isArray(options)) {
+    return options;
+  }
+  if (options && typeof options === "object") {
+    if (Array.isArray(options.results)) {
+      return options.results;
+    }
+    if (Array.isArray(options.data)) {
+      return options.data;
+    }
+  }
+  return [];
+};
+
+const FilterDropdownSelect = ({
+  apiRef,
+  defaultOptions = [],
+  value,
+  onChange,
+  placeholder,
+}) => {
+  const shouldFetch = Boolean(apiRef);
+
+  const { data: remoteData, isLoading } = useQuery({
+    queryKey: ["filter-options", apiRef],
+    queryFn: () => axiosGet(`selects/${apiRef}`),
+    enabled: shouldFetch,
+    staleTime: 1000 * 60 * 10,
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: false,
+  });
+
+  const remoteOptions = useMemo(
+    () => coerceOptionsArray(remoteData).map(normalizeOption),
+    [remoteData]
+  );
+
+  const normalizedDefault = useMemo(
+    () => coerceOptionsArray(defaultOptions).map(normalizeOption),
+    [defaultOptions]
+  );
+
+  const mergedOptions = useMemo(() => {
+    const entries = new Map();
+
+    [...remoteOptions, ...normalizedDefault].forEach((option) => {
+      if (!entries.has(option.value)) {
+        entries.set(option.value, option);
+      }
+    });
+
+    return Array.from(entries.values());
+  }, [remoteOptions, normalizedDefault]);
+
+  return (
+    <Select
+      showSearch
+      allowClear
+      optionFilterProp="label"
+      placeholder={placeholder}
+      style={{ marginBottom: 8, display: "block" }}
+      value={value}
+      onChange={onChange}
+      options={mergedOptions}
+      loading={isLoading}
+    />
+  );
 };
 
 const AntTable = ({
@@ -250,6 +345,7 @@ const AntTable = ({
       }
 
       const filterMeta = {
+        ...(providedFilterMeta ?? {}),
         type: providedFilterMeta?.type ?? legacyFilterType ?? "text",
         operator:
           providedFilterMeta?.operator ??
@@ -513,23 +609,12 @@ const AntTable = ({
               onKeyDown={(e) => e.stopPropagation()}
             >
               {isSelectFilter && (
-                <Select
-                  showSearch
-                  allowClear
-                  optionFilterProp="label"
+                <FilterDropdownSelect
+                  apiRef={filterMeta.api_ref ?? column.api_ref}
                   placeholder={`Seleccionar ${column.title ?? dataIndex}`}
-                  style={{ marginBottom: 8, display: "block" }}
                   value={descriptor?.value ?? undefined}
                   onChange={handleSelectChange}
-                  options={filterOptions.map((option) => ({
-                    label:
-                      option?.label ??
-                      option?.text ??
-                      option?.name ??
-                      option?.nombre ??
-                      String(option?.value ?? option),
-                    value: option?.value ?? option,
-                  }))}
+                  defaultOptions={filterOptions}
                 />
               )}
 

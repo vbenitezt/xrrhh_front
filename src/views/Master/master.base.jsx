@@ -5,6 +5,7 @@ import dayjs from "dayjs";
 import { EditButton, RemoveButton } from "../../components/Buttons/CustomButtons";
 import PdfViewer from "../../components/PdfViewer/PdfViewer";
 import config from "../../common/config/config";
+import { evaluateExpression, flattenStructure, normalizeStructure } from "../../utils/fieldStructure";
 
 
 export const makeColumns = ({
@@ -23,141 +24,237 @@ export const makeColumns = ({
   if (!fields_structure) {
     return [];
   }
-  let columns = fields_structure.filter(item => item.in_table || item.field_show).map((item) => {
-    const isFieldShow = Boolean(item.field_show);
-    const fieldShowPath = isFieldShow ? item.field_show.split(".") : [];
-    const structureOptions = Array.isArray(item.options)
-      ? item.options.map((option) => ({
-        value: option?.value ?? option?.id ?? option?.key ?? option,
-        label:
-          option?.label ??
-          option?.text ??
-          option?.name ??
-          option?.nombre ??
-          String(option?.value ?? option),
-      }))
-      : [];
+  const normalizedStructure = normalizeStructure(fields_structure);
+  const flatFields = flattenStructure(normalizedStructure);
 
-    const dataOptionsMap = tableData.reduce((acc, row) => {
-      if (!row || !isFieldShow) {
-        return acc;
+  const columns = flatFields
+    .filter((item) => {
+      const showInGrid = item.in_grid ?? item.in_table ?? false;
+      const isVisible = item.visible ?? true;
+      return (showInGrid || item.field_show) && isVisible;
+    })
+    .map((item) => {
+      const fieldName = item.field ?? item.name;
+      if (!fieldName) {
+        return null;
       }
 
-      const optionValue = row?.[item.name];
-      if (optionValue === undefined || optionValue === null) {
-        return acc;
-      }
+      const isFieldShow = Boolean(item.field_show);
+      const fieldShowPath = isFieldShow ? item.field_show.split(".") : [];
+      const structureOptions = Array.isArray(item.options)
+        ? item.options.map((option) => ({
+          value: option?.value ?? option?.id ?? option?.key ?? option,
+          label:
+            option?.label ??
+            option?.text ??
+            option?.name ??
+            option?.nombre ??
+            String(option?.value ?? option),
+        }))
+        : [];
 
-      const optionLabel = fieldShowPath.reduce((current, segment) => {
-        if (current === undefined || current === null) {
-          return current;
+      const dataOptionsMap = tableData.reduce((acc, row) => {
+        if (!row || !isFieldShow) {
+          return acc;
         }
-        return current[segment];
-      }, row);
 
-      if (optionLabel === undefined || optionLabel === null) {
+        const optionValue = row?.[fieldName];
+        if (optionValue === undefined || optionValue === null) {
+          return acc;
+        }
+
+        const optionLabel = fieldShowPath.reduce((current, segment) => {
+          if (current === undefined || current === null) {
+            return current;
+          }
+          return current[segment];
+        }, row);
+
+        if (optionLabel === undefined || optionLabel === null) {
+          return acc;
+        }
+
+        if (!acc.has(optionValue)) {
+          acc.set(optionValue, optionLabel);
+        }
+
         return acc;
+      }, new Map());
+
+      const dataOptions = Array.from(dataOptionsMap.entries()).map(
+        ([value, label]) => ({ value, label })
+      );
+
+      let filterOptions = structureOptions.length > 0 ? structureOptions : dataOptions;
+
+      const normalizedType = (item.data_type ?? item.type ?? "string").toLowerCase();
+
+      if (normalizedType === "boolean") {
+        filterOptions = [
+          { value: true, label: "SI" },
+          { value: false, label: "NO" },
+        ];
       }
 
-      if (!acc.has(optionValue)) {
-        acc.set(optionValue, optionLabel);
-      }
+      const isNumericType = ["number", "integer", "decimal", "float"].includes(
+        normalizedType
+      );
+      const isDateType = normalizedType === "date" || fieldName.toLowerCase().includes("date");
 
-      return acc;
-    }, new Map());
-
-    const dataOptions = Array.from(dataOptionsMap.entries()).map(
-      ([value, label]) => ({ value, label })
-    );
-
-    let filterOptions = structureOptions.length > 0 ? structureOptions : dataOptions;
-
-    if (item.type === "boolean") {
-      filterOptions = [
-        { value: true, label: "SI" },
-        { value: false, label: "NO" },
-      ];
-    }
-
-    const isNumericType = ["number", "integer", "decimal", "float"].includes(
-      item.type
-    );
-    const isDateType = item.type === "date" || item.name.includes("date");
-
-    const filterMeta = isFieldShow
-      ? {
-        type: "select",
-        operator: "eq",
-        options: filterOptions,
-      }
-      : item.type === "boolean"
+      const filterMeta = isFieldShow
         ? {
           type: "select",
           operator: "eq",
           options: filterOptions,
         }
-        : isNumericType
+        : normalizedType === "boolean"
           ? {
-            type: "number",
-            operator: "btw",
+            type: "select",
+            operator: "eq",
+            options: filterOptions,
           }
-          : isDateType
+          : isNumericType
             ? {
-              type: "date",
+              type: "number",
               operator: "btw",
-              format: "YYYY-MM-DD",
             }
-            : {
-              type: "text",
-              operator: "ilk",
-            };
+            : isDateType
+              ? {
+                type: "date",
+                operator: "btw",
+                format: "YYYY-MM-DD",
+              }
+              : {
+                type: "text",
+                operator: "ilk",
+              };
 
-    return {
-      title: item.label,
-      dataIndex: item.name,
-      key: item.name,
-      filterType: filterMeta.type,
-      filterOptions,
-      filterMeta,
-      ...(["number", "integer"].includes(item.type)
-        ? {
-          align: "right",
-          render: (key) => <>{formatNumber(key)}</>,
-        }
-        : item.type === "boolean"
-          ? {
-            align: "center",
-            render: (key) => {
-              return <>{key ? "SI" : "NO"}</>;
-            },
-          }
-          : (item.name.includes("photo") || item.name.includes("logo")) && ["string", "file"].includes(item.type)
-            ? {
-              align: "center",
-              render: (key) => (
-                key && <Avatar src={<Image src={`${config.api.baseUrl}/files/${key}?${dayjs().format('YYYYMMDDHHmmssSSS')}`} alt="avatar" />} />
-              ),
-            }
-            : item.field_show ? {
-              render: (_, row) => {
-                // item.field_show puede ser algo como "_cargo_superior.desc_cargo"
-                // console.log("ROW",row);
-                const path = item.field_show;
-                // Soportar paths anidados separados por punto
-                const value = path.split('.').reduce((acc, key) => acc && acc[key], row);
-                return <>{value}</>;
-              },
-            } : (item.name.includes("date") || item.type === "date") ? {
-              align: "center",
-              render: (key) => <>{dayjs(key, "YYYY-MM-DD").isValid() && dayjs(key, "YYYY-MM-DD").format("DD-MM-YYYY")}</>,
-            } : item.name.includes("attached") ? {
-              align: "center",
-              render: (key) => (
-                key && <PdfViewer url={`${config.api.baseUrl}/files/${key}`} />
-              ),
-            } : {}),
-    };
-  });
+      if (filterMeta.type === "select" && item.api_ref) {
+        filterMeta.api_ref = item.api_ref;
+      }
+
+      const renderNumeric = {
+        align: "right",
+        render: (key, row) => {
+          const computedValue = item.func ? evaluateExpression(item.func, row) : key;
+          return <>{formatNumber(computedValue)}</>;
+        },
+      };
+
+      const renderBoolean = {
+        align: "center",
+        render: (key) => {
+          return <>{key ? "SI" : "NO"}</>;
+        },
+      };
+
+      const renderImage = {
+        align: "center",
+        render: (key) => (
+          key && (
+            <Avatar
+              src={
+                <Image
+                  src={`${config.api.baseUrl}/files/${key}?${dayjs().format("YYYYMMDDHHmmssSSS")}`}
+                  alt="avatar"
+                />
+              }
+            />
+          )
+        ),
+      };
+
+      const renderFieldShow = {
+        render: (_, row) => {
+          const path = item.field_show;
+          const value = path.split(".").reduce((acc, key) => acc && acc[key], row);
+          return <>{value}</>;
+        },
+      };
+
+      const renderDate = {
+        align: "center",
+        render: (key) => (
+          <>
+            {dayjs(key, "YYYY-MM-DD").isValid() &&
+              dayjs(key, "YYYY-MM-DD").format("DD-MM-YYYY")}
+          </>
+        ),
+      };
+
+      const renderPdf = {
+        align: "center",
+        render: (key) => key && <PdfViewer url={`${config.api.baseUrl}/files/${key}`} />,
+      };
+
+      const baseColumn = {
+        title: item.label,
+        dataIndex: fieldName,
+        key: fieldName,
+        filterType: filterMeta.type,
+        filterOptions,
+        filterMeta,
+        ellipsis: item.expand ? false : true,
+      };
+
+      if (["number", "integer", "decimal", "float"].includes(normalizedType)) {
+        return {
+          ...baseColumn,
+          ...renderNumeric,
+        };
+      }
+
+      if (normalizedType === "boolean") {
+        return {
+          ...baseColumn,
+          ...renderBoolean,
+        };
+      }
+
+      if (
+        (fieldName.includes("photo") || fieldName.includes("logo")) &&
+        ["string", "file"].includes(normalizedType)
+      ) {
+        return {
+          ...baseColumn,
+          ...renderImage,
+        };
+      }
+
+      if (item.field_show) {
+        return {
+          ...baseColumn,
+          ...renderFieldShow,
+        };
+      }
+
+      if (fieldName.includes("attached")) {
+        return {
+          ...baseColumn,
+          ...renderPdf,
+        };
+      }
+
+      if (fieldName.includes("date") || normalizedType === "date") {
+        return {
+          ...baseColumn,
+          ...renderDate,
+        };
+      }
+
+      if (item.func) {
+        return {
+          ...baseColumn,
+          render: (_, row) => {
+            const computedValue = evaluateExpression(item.func, row);
+            return <>{computedValue}</>;
+          },
+        };
+      }
+
+      return baseColumn;
+    })
+    .filter(Boolean);
 
   !disableEdition && columns.push(
     {

@@ -2,7 +2,7 @@ import { Select } from "antd";
 import { useQuery } from "@tanstack/react-query";
 import { axiosGet } from "../../apis/calls" // tu helper
 
-export default function DynamicSelect({ field, calculateWidth, value ,onChange}) {
+export default function DynamicSelect({ field, calculateWidth, value, onChange, disabled = false }) {
   const { data: options = [], isLoading } = useQuery({
     queryKey: ["select-options", field.api_ref],   // cache por endpoint
     queryFn: () => field.api_ref ? axiosGet(`selects/${field.api_ref}`) : Promise.resolve(field.options),
@@ -31,6 +31,7 @@ export default function DynamicSelect({ field, calculateWidth, value ,onChange})
       loading={isLoading}
       value={value}        // <-- valor actual del campo
       onChange={onChange}  // <-- callback para actualizar el valor
+      disabled={disabled}
     >
       {opts.map(opt => (
         <Select.Option key={opt.value} value={opt.value}>
