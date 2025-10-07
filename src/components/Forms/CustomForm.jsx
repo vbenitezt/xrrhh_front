@@ -142,7 +142,7 @@ const getFieldTooltip = (field) => field?.tooltips ?? field?.tooltip ?? false;
 
 const CustomForm = ({
   onFinish,
-  form = Form.useForm(),
+  form,
   fields,
   maxWidth = 600,
   className = "",
@@ -356,7 +356,7 @@ const CustomForm = ({
   return (
     <Form
       size="small"
-      className={flex ? `flex flex-wrap justify-start w-full gap-2 ${className}` : `flex flex-col w-full h-full ${className}`}
+      className={flex ? `flex flex-wrap gap-2 justify-start w-full ${className}` : `flex flex-col w-full h-full ${className}`}
       form={form}
       onFinish={handleOnFinish}
       layout={flex ? "vertical" : "horizontal"}

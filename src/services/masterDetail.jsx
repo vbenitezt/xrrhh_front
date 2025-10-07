@@ -72,7 +72,7 @@ export const useDeleteRecord = (path = "", title = "Registro") => {
         notify(`${title} eliminado correctamente`);
       }
     },
-    onError: (error) => {
+    onError: () => {
       notify(`Error al eliminar ${title}`, "error");
     },
   });

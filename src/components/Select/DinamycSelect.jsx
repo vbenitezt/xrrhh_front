@@ -1,16 +1,9 @@
 import { Select } from "antd";
-import { useQuery } from "@tanstack/react-query";
-import { axiosGet } from "../../apis/calls" // tu helper
+import { useSelectOptions } from "../../services/selects";
 
 export default function DynamicSelect({ field, calculateWidth, value, onChange, disabled = false }) {
-  const { data: options = [], isLoading } = useQuery({
-    queryKey: ["select-options", field.api_ref],   // cache por endpoint
-    queryFn: () => field.api_ref ? axiosGet(`selects/${field.api_ref}`) : Promise.resolve(field.options),
-    enabled: !!field.api_ref,                      // solo si hay api_ref
-    staleTime: 1000 * 60 * 10, // 10 minutos de datos frescos
-  refetchOnWindowFocus: false, // no refetchear al enfocar ventana
-  refetchOnReconnect: false
-  });
+
+  const { options, isLoading } = useSelectOptions(field);
 
   const opts = (options || field.options || []).map(o => ({
     value: o.value ?? o.id,

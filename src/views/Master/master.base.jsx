@@ -264,7 +264,7 @@ export const makeColumns = ({
       fixed: "right",
       width: 100,
       render: (row) => (
-        <div className="flex flex-row justify-center gap-1 text-center">
+        <div className="flex flex-row gap-1 justify-center text-center">
           {getExtraActions(row)?.map(extraAction => extraAction)}
           <EditButton
             title={`Editar ${title}`}
@@ -272,13 +272,23 @@ export const makeColumns = ({
             size="small"
             onClick={() => {
               if (fromMasterDetail === true) {
-                setEditing({ ...row })
+                const values = {}
+                for (const k of Object.keys(row)) {
+                  if (typeof row[k] === 'string' && row[k].includes("new_value_")) {
+                    values[k] = row[k]
+                  } else if (dayjs(row[k], "YYYY-MM-DD").isValid()) {
+                    values[k] = dayjs(row[k], "YYYY-MM-DD")
+                  } else {
+                    values[k] = row[k]
+                  }
+                }
+                setEditing({ ...values })
               } else {
                 setEditing(row[pk]);
                 setIsModalOpen(true);
                 const values = {}
                 for (const k of Object.keys(row)) {
-                  if (dayjs(row[k], "YYYY-MM-DD").isValid()){
+                  if (dayjs(row[k], "YYYY-MM-DD").isValid()) {
                     values[k] = dayjs(row[k], "YYYY-MM-DD")
                   } else {
                     values[k] = row[k]

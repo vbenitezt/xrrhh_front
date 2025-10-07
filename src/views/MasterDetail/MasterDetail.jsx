@@ -18,6 +18,8 @@ import {
     flattenStructure,
     normalizeStructure,
 } from "../../utils/fieldStructure";
+import { v4 } from "uuid";
+import { useQueryClient } from "@tanstack/react-query";
 
 
 const MasterDetail = ({
@@ -105,9 +107,23 @@ const MasterDetail = ({
             headerForm.resetFields();
             detailsForm.resetFields();
         }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [detailTabs, detailsForm, headerForm, header_data, recomputeHeaderValues]);
 
 
+    const queryClient = useQueryClient();
+
+    const getSelectOptionsCached = async (field) => {
+        const key = ['select-options', field.api_ref];
+
+        await queryClient.refetchQueries({
+            queryKey: key,
+            exact: true,
+            type: 'all',
+        });
+
+        return queryClient.getQueryData(key);
+    };
 
     // Header Handler
     const handleSave = (values) => {
@@ -173,8 +189,16 @@ const MasterDetail = ({
         setSelectedTab(tab);
     }
 
-    const handleAddItem = (item) => {
-        const tabSelected = detailTabs.find(tab => tab.name === selectedTab);
+    const tabSelected = useMemo(() => {
+        if (!selectedTab || !detailTabs.length) {
+            return [];
+        }
+        return detailTabs.find(tab => tab.name === selectedTab);
+    }, [detailTabs, selectedTab]);
+
+    console.log("data[selectedTab]", data[selectedTab]);
+
+    const handleAddItem = async (item) => {
         if (!tabSelected) {
             return;
         }
@@ -186,48 +210,56 @@ const MasterDetail = ({
 
         const flatFields = flattenStructure(tabSelected.structure);
 
-        const rowValues = { ...item, ...computedValues };
+        const rowValues = {
+            ...item,
+            ...computedValues,
+            ...(item[tabSelected.pk] ?
+                { [tabSelected.pk]: item[tabSelected.pk] }
+                : { [tabSelected.pk]: `new_value_${v4()}` })
+        };
 
-        flatFields.forEach((field) => {
+        for (const field of flatFields) {
             if (field.field_show && Array.isArray(field.options)) {
-                const fieldName = field.field ?? field.name;
-                const selectedValue = rowValues[fieldName];
-                const match = field.options.find((opt) => {
-                    const optionValue = opt?.value ?? opt?.id ?? opt?.key ?? opt;
-                    return optionValue === selectedValue;
-                });
-                if (match) {
-                    rowValues[field.field_show] =
-                        match?.label ?? match?.text ?? match?.name ?? match?.nombre ?? match?.value ?? match;
+                const optionsCached = await getSelectOptionsCached(field);
+                console.log("optionsCached", optionsCached);
+
+                const selectedValue = rowValues[field.name];
+                if (selectedValue && optionsCached) {
+                    const match = optionsCached.find((opt) => opt.value === selectedValue)
+                    if (match) {
+                        rowValues[field.field_show.split(".")[0]] = {
+                            [field.name]: match.value, [field.field_show.split(".")[1]]: match.label
+                        }
+                    }
                 }
             }
-        });
+        }
 
         const tabData = data[selectedTab] ?? [];
-        const newTabData = [...tabData, rowValues];
+        const currentTabData = tabData.filter(it => it[tabSelected.pk] !== rowValues[tabSelected.pk]);
+        const newTabData = [...currentTabData, rowValues];
         const nextData = { ...data, [selectedTab]: newTabData };
         setData(nextData);
         recomputeHeaderValues(nextData);
         detailsForm.resetFields();
     };
 
-    const handleEditItem = (itemPk, insertFields = false) => {
+    const handleEditItem = (item) => {
         const tabSelected = detailTabs.find(tab => tab.name === selectedTab);
         if (!tabSelected) {
             return;
         }
 
         const currentTabData = data[selectedTab] ?? [];
-        const currentItem = currentTabData.find(it => it[tabSelected.pk] === itemPk);
-        const newTabData = currentTabData.filter(it => it[tabSelected.pk] !== itemPk);
-        const nextData = { ...data, [selectedTab]: newTabData };
+        // const newTabData = currentTabData.filter(it => it[tabSelected.pk] !== item[tabSelected.pk]);
+        const nextData = { ...data, [selectedTab]: currentTabData };
         setData(nextData);
         recomputeHeaderValues(nextData);
-        if (insertFields === true && currentItem) {
-            detailsForm.setFieldsValue({
-                ...currentItem,
-            });
-        }
+
+        detailsForm.setFieldsValue({
+            ...item,
+        });
+
     };
 
     const handleRemoveItem = (item, items) => {
@@ -270,9 +302,9 @@ const MasterDetail = ({
     }
 
     return (
-        <div className="flex flex-col w-full h-full gap-2">
+        <div className="flex flex-col gap-2 w-full h-full">
             {/* Buttons Section */}
-            <div className="flex flex-row justify-between w-full gap-2 h-2/12">
+            <div className="flex flex-row gap-2 justify-between w-full h-2/12">
                 <div className="w-full">
                     <Divider
                         style={{ margin: "0px", padding: "0px" }}
@@ -281,7 +313,7 @@ const MasterDetail = ({
                         {title}
                     </Divider>
                 </div>
-                <div className="flex flex-row justify-end gap-1">
+                <div className="flex flex-row gap-1 justify-end">
                     {extraSaveAction ?
                         <SaveButton size="default" onClick={() => extraSaveAction()} />
                         :
@@ -343,7 +375,7 @@ const MasterDetail = ({
             </Divider>
             <div className="flex flex-row w-full h-5/12">
                 {/* Buttons */}
-                <div className="flex flex-col h-full gap-1 pr-3">
+                <div className="flex flex-col gap-1 pr-3 h-full">
                     <AddButton
                         onClick={() => detailsForm.submit()}
                     />
@@ -378,13 +410,13 @@ const MasterDetail = ({
                             children: (
                                 <>
                                     {/* Form / Table */}
-                                    <div className="flex flex-col h-full gap-1">
+                                    <div className="flex flex-col gap-1 h-full">
                                         <CustomForm
                                             flex={true}
                                             form={detailsForm}
                                             fields={tab.formStructure}
                                             onFinish={handleAddItem}
-                                            hiddenFields={tab.hide_detail_fields}
+                                            hiddenFields={tabSelected.pk ? [tabSelected.pk] : []}
                                         />
                                         <AntTable
                                             data={data[tab.name] ?? []}
@@ -394,11 +426,11 @@ const MasterDetail = ({
                                                 form: detailsForm,
                                                 remove: handleRemoveItem,
                                                 setEditing: handleEditItem,
-                                                setIsModalOpen: (e) => { },
+                                                setIsModalOpen: () => { },
                                                 fields_structure: tab.structure,
                                                 tableData: data[tab.name] ?? [],
-                                                getExtraActions: (e) => { },
-                                                // fromMasterDetail: true,
+                                                getExtraActions: () => { },
+                                                fromMasterDetail: true,
                                             })}
                                             total={false}
                                             pagination={false}
