@@ -196,8 +196,6 @@ const MasterDetail = ({
         return detailTabs.find(tab => tab.name === selectedTab);
     }, [detailTabs, selectedTab]);
 
-    console.log("data[selectedTab]", data[selectedTab]);
-
     const handleAddItem = async (item) => {
         if (!tabSelected) {
             return;
@@ -221,8 +219,6 @@ const MasterDetail = ({
         for (const field of flatFields) {
             if (field.field_show && Array.isArray(field.options)) {
                 const optionsCached = await getSelectOptionsCached(field);
-                console.log("optionsCached", optionsCached);
-
                 const selectedValue = rowValues[field.name];
                 if (selectedValue && optionsCached) {
                     const match = optionsCached.find((opt) => opt.value === selectedValue)
@@ -290,8 +286,6 @@ const MasterDetail = ({
         headerForm.resetFields();
         detailsForm.resetFields();
     }
-
-
 
     if (isStructureLoading || isSavingLoading) {
         return <Spinner />
@@ -403,6 +397,7 @@ const MasterDetail = ({
                     type="card"
                     onChange={handleSelectedTab}
                     activeKey={selectedTab}
+                    destroyOnHidden
                     items={detailTabs.map(tab => {
                         return {
                             key: tab.name,

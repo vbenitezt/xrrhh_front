@@ -57,7 +57,8 @@ const Master = ({
         },
       });
     }
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pk]);
 
   const onCancel = () => {
     form.resetFields();

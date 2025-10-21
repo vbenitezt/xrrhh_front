@@ -1,7 +1,8 @@
 import Master from "../../../views/Master/Master";
 
 
-const GenericMaster = ({pk, path, title, title_plural}) => {
+const GenericMaster = ({ pk, path, title, title_plural }) => {
+
     return (
         <Master
             pk={pk}

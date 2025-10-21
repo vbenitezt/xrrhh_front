@@ -27,7 +27,9 @@ const flattenRoutes = (routes = []) =>
 function App() {
   const { defaultAlgorithm, darkAlgorithm } = theme;
 
-  const { isAuth, profile } = useAuthStore((state) => state);
+  const { isAuth, profile } = useAuthStore();
+
+  console.log("isAuth", isAuth);
 
   const { theme: currentTheme } = useThemeStore();
 
@@ -45,7 +47,7 @@ function App() {
   ));
 
   return (
-    <BrowserRouter>
+    <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
       <ConfigProvider
         locale={locale}
         theme={{
