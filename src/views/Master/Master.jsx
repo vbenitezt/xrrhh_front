@@ -6,9 +6,10 @@ import FlexColumn from "../../components/Structure/FlexColumn";
 import AntTable from "../../components/Tables/AntTable";
 import { Form } from "antd";
 import Spinner from "../../components/Loading/Spinner";
-import { makeColumns } from "./master.base";
+import { makeColumns, makeExtraButtons } from "./master.base";
 import { buildSubmissionPayload, filterFormStructure, normalizeStructure } from "../../utils/fieldStructure";
 import {
+  useButtonAction,
   useDeleteRecord,
   useGetPaginatedRecords,
   useSaveRecord,
@@ -16,12 +17,20 @@ import {
 
 const Master = ({
   pk, path, title, headTitle, getExtraActions, customAddingAction = null,
-  customEditingAction = null, fromMasterDetail = false, selectedRowKeys = null,
-  setSelectedRowKeys = null, extraFormItems = [], extraButtons = [],
+  customEditingAction = null, fromMasterDetail = false, selectedRowKeys: externalSelectedRowKeys = null,
+  setSelectedRowKeys: externalSetSelectedRowKeys = null, extraFormItems = [], extraButtons = [],
   disableCreation = false, disableEdition = false
 }) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editing, setEditing] = useState(false);
+
+  // Estado interno para manejar selectedRowKeys si no se pasa desde fuera
+  const [internalSelectedRowKeys, setInternalSelectedRowKeys] = useState([]);
+
+  // Determinar si usamos el estado externo o interno
+  const isControlled = externalSelectedRowKeys !== null && externalSetSelectedRowKeys !== null;
+  const selectedRowKeys = isControlled ? externalSelectedRowKeys : internalSelectedRowKeys;
+  const setSelectedRowKeys = isControlled ? externalSetSelectedRowKeys : setInternalSelectedRowKeys;
 
   const { tablePagination, setTablePagination } = useTablePagination();
 
@@ -29,7 +38,7 @@ const Master = ({
 
   const { data: response, isFetching } = useGetPaginatedRecords(path);
 
-  const { data, form: rawFieldsStructure } = response ? response : {};
+  const { data, form: rawFieldsStructure, buttons: definedExtraButtons } = response ? response : {};
 
   const normalizedFieldsStructure = useMemo(
     () => normalizeStructure(rawFieldsStructure),
@@ -42,6 +51,7 @@ const Master = ({
   );
 
   const { mutate: save, isPending: isSaving } = useSaveRecord(path, title);
+  const { mutate: callButtonAction, isPending: isCallingButtonAction } = useButtonAction(path);
   const { mutate: remove, isPending: isRemoving } = useDeleteRecord(
     path,
     title
@@ -108,7 +118,10 @@ const Master = ({
         text={`Agregar ${title}`}
         width={600}
         headTitle={headTitle}
-        extraButtons={extraButtons}
+        extraButtons={[
+          ...(makeExtraButtons(definedExtraButtons, callButtonAction, selectedRowKeys, isCallingButtonAction) ?? []),
+          ...(extraButtons ?? []),
+        ]}
         component={
           <CustomForm
             className="mt-5"
@@ -140,8 +153,8 @@ const Master = ({
         })}
         data={data}
         columnKey={pk}
-        selectedRowKeys={selectedRowKeys && selectedRowKeys}
-        setRowSelection={setSelectedRowKeys && setSelectedRowKeys}
+        selectedRowKeys={selectedRowKeys}
+        setRowSelection={setSelectedRowKeys}
       />
     </FlexColumn>
   );

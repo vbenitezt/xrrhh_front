@@ -149,19 +149,12 @@ const CustomForm = ({
   extraFormItems = [],
   flex = false,
   hiddenFields = [],
-  onValuesChange = null,
   onFieldBlur = null,
 }) => {
   // const { saveFile, url, field } = useSaveFbFile();
 
   const handleOnFinish = (values) => {
     onFinish({ ...values });
-  };
-
-  const handleValuesChange = (changedValues, allValues) => {
-    if (onValuesChange && typeof onValuesChange === 'function') {
-      onValuesChange(changedValues, allValues);
-    }
   };
 
   const handleFieldBlur = (fieldName) => {

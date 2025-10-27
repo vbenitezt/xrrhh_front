@@ -18,16 +18,17 @@ import {
 import { HiOutlineDocumentPlus } from "react-icons/hi2";
 import { TbSitemap } from "react-icons/tb";
 
-export const CircleButton = ({ icon = <QuestionOutlined />, title = "", ...props }) => {
+export const CircleButton = ({ icon = <QuestionOutlined />, title = "", danger = false, ...props }) => {
   return (
-    <Tooltip title={title} placement="top" getPopupContainer={(trigger) => {return trigger.body}}>
+    <Tooltip title={title} placement="top" getPopupContainer={(trigger) => { return trigger.body }}>
       <Button
         shape="circle"
         type="default"
         size="default"
         icon={icon}
+        {...(danger ? { danger: true } : {})}
         {...props}
-      />      
+      />
     </Tooltip>
   );
 };
@@ -38,7 +39,7 @@ export const AddButton = ({
   ...props
 }) => {
   return (
-      <CircleButton type="primary" icon={icon} title={title} {...props} />
+    <CircleButton type="primary" icon={icon} title={title} {...props} />
   );
 };
 
@@ -47,8 +48,8 @@ export const ImportButton = ({
   icon = <FileExcelOutlined />,
   ...props
 }) => {
-  return (  
-      <CircleButton icon={icon} title={title} {...props} />
+  return (
+    <CircleButton icon={icon} title={title} {...props} />
   );
 };
 
@@ -58,9 +59,9 @@ export const ExportButton = ({
   ...props
 }) => {
   return (
-      <CircleButton icon={icon} title={title} {...props} />
+    <CircleButton icon={icon} title={title} {...props} />
   );
-};  
+};
 
 export const PrintPDFButton = ({
   title = "Imprimir",
@@ -68,8 +69,8 @@ export const PrintPDFButton = ({
   ...props
 }) => {
   return (
-      <CircleButton icon={icon} title={title} {...props} />
-    
+    <CircleButton icon={icon} title={title} {...props} />
+
   );
 };
 
@@ -79,7 +80,7 @@ export const CloseButton = ({
   ...props
 }) => {
   return (
-      <CircleButton danger icon={icon} title={title} {...props} />
+    <CircleButton danger icon={icon} title={title} {...props} />
   );
 };
 
@@ -89,7 +90,7 @@ export const ClearButton = ({
   ...props
 }) => {
   return (
-      <CircleButton danger icon={icon} title={title} {...props} />
+    <CircleButton danger icon={icon} title={title} {...props} />
   );
 };
 
@@ -99,7 +100,7 @@ export const RemoveButton = ({
   ...props
 }) => {
   return (
-      <CircleButton danger icon={icon} title={title} {...props} />
+    <CircleButton danger icon={icon} title={title} {...props} />
   );
 };
 
@@ -109,7 +110,7 @@ export const NextButton = ({
   ...props
 }) => {
   return (
-      <CircleButton icon={icon} title={title} {...props} />
+    <CircleButton icon={icon} title={title} {...props} />
   );
 };
 
@@ -119,7 +120,7 @@ export const RelationButton = ({
   ...props
 }) => {
   return (
-      <CircleButton icon={icon} title={title} {...props} />
+    <CircleButton icon={icon} title={title} {...props} />
   );
 };
 
@@ -129,7 +130,7 @@ export const EditButton = ({
   ...props
 }) => {
   return (
-      <CircleButton icon={icon} title={title} {...props} />
+    <CircleButton icon={icon} title={title} {...props} />
   );
 };
 
@@ -139,7 +140,7 @@ export const NewButton = ({
   ...props
 }) => {
   return (
-      <CircleButton icon={icon} title={title} {...props} />
+    <CircleButton icon={icon} title={title} {...props} />
   );
 };
 
@@ -149,7 +150,7 @@ export const SendMailButton = ({
   ...props
 }) => {
   return (
-      <CircleButton icon={icon} title={title} {...props} />
+    <CircleButton icon={icon} title={title} {...props} />
   );
 };
 
@@ -164,7 +165,7 @@ export const PreviousButton = ({
     onClick = () => navigate(-1);
   }
   return (
-      <CircleButton onClick={onClick} icon={icon} title={title} {...props} />
+    <CircleButton onClick={onClick} icon={icon} title={title} {...props} />
   );
 };
 
@@ -173,16 +174,16 @@ export const SaveButton = ({ title = "Guardar", ...props }) => {
     token: { colorSuccess, colorSuccessBg },
   } = theme.useToken();
   return (
-      <CircleButton
-        type="primary"
-        style={{
-          background: colorSuccess,
-          "--hover-background": colorSuccessBg,
-          "--hover-opacity": 0.5,
-        }}
-        icon={<SaveOutlined />}
-        title={title}
-        {...props}
-      />
+    <CircleButton
+      type="primary"
+      style={{
+        background: colorSuccess,
+        "--hover-background": colorSuccessBg,
+        "--hover-opacity": 0.5,
+      }}
+      icon={<SaveOutlined />}
+      title={title}
+      {...props}
+    />
   );
 };

@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   axiosDeletePaginate,
   axiosPaginateGet,
+  axiosPost,
   axiosPostPaginate,
   basePostBlobFile,
 } from "../apis/calls";
@@ -113,6 +114,25 @@ export const useUploadExcel = (path) => {
     },
     onError: (error) => {
       notify("Error al subir excel", "error");
+      console.log("ERROR", error);
+    },
+  });
+};
+
+
+export const useButtonAction = (path) => {
+  const { notify } = useNotification();
+  return useMutation({
+    mutationFn: ({ subPath, body }) => {
+      return axiosPost(`${path}${subPath}`, body)
+    },
+    onSuccess: (response) => {
+      if (response) {
+        notify("Acción ejecutada correctamente!");
+      }
+    },
+    onError: (error) => {
+      notify("Error al ejecutar acción", "error");
       console.log("ERROR", error);
     },
   });

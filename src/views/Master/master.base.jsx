@@ -1,12 +1,19 @@
 import React from "react";
 import { Avatar, Image, Popconfirm } from "antd";
-import { QuestionCircleOutlined } from "@ant-design/icons";
+import * as icons from "react-icons/md";
 import { formatNumber } from "../../utils/formatMoney";
 import dayjs from "dayjs";
-import { EditButton, RemoveButton } from "../../components/Buttons/CustomButtons";
+import { CircleButton, EditButton, RemoveButton } from "../../components/Buttons/CustomButtons";
 import PdfViewer from "../../components/PdfViewer/PdfViewer";
 import config from "../../common/config/config";
 import { evaluateExpression, flattenStructure, normalizeStructure } from "../../utils/fieldStructure";
+
+
+const getIconComponent = (iconName) => {
+  if (!iconName || !icons[iconName]) return null;
+  const IconComponent = icons[iconName];
+  return <IconComponent />;
+};
 
 
 export const makeColumns = ({
@@ -266,7 +273,7 @@ export const makeColumns = ({
       width: 100,
       render: (row) => (
         <div className="flex flex-row gap-1 justify-center text-center">
-          {getExtraActions(row)?.map((extraAction, index) => 
+          {getExtraActions(row)?.map((extraAction, index) =>
             React.cloneElement(extraAction, { key: `extra-action-${index}` })
           )}
           <EditButton
@@ -306,7 +313,7 @@ export const makeColumns = ({
           <Popconfirm
             title="Cuidado!!!"
             description={`Está seguro de eliminar el ${title}?`}
-            icon={<QuestionCircleOutlined style={{ color: "red" }} />}
+            icon={getIconComponent("MdQuestionAnswer")}
             placement="left"
             onConfirm={() => remove({ ...row })}
             okButtonProps={{ type: "default", danger: true }}
@@ -321,3 +328,22 @@ export const makeColumns = ({
   )
   return columns;
 };
+
+
+
+export const makeExtraButtons = (buttons = [], callApiFunction = () => { }, selectedRowKeys = [], isLoading = false) => {
+  const extraButtons = buttons.map((button, index) => {
+    return (
+      <CircleButton
+        title={button.title}
+        key={`extra-button-${index}`}
+        danger={button.danger}
+        loading={isLoading}
+        icon={getIconComponent(button.icon)}
+        disabled={button.only_selected_rows && selectedRowKeys.length === 0}
+        onClick={() => callApiFunction({ subPath: button.path, body: { selected_pks: selectedRowKeys } })}
+      />
+    );
+  });
+  return extraButtons;
+}
