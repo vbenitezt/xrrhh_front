@@ -496,7 +496,9 @@ export const buildSubmissionPayload = ({ fields, values = {}, layouts = {} }) =>
 };
 
 export const buildLayoutsData = (detailTabs = [], data = {}) => {
-  return detailTabs.reduce((acc, tab) => {
+  const filteredDetailTabs = detailTabs
+    .filter(tab => !tab.view_only)
+    .reduce((acc, tab) => {
     const layoutKey = tab?.layout_mr ?? tab?.name ?? tab?.id ?? tab?.key;
     if (!layoutKey) {
       return acc;
@@ -504,4 +506,109 @@ export const buildLayoutsData = (detailTabs = [], data = {}) => {
     acc[layoutKey] = data[tab.name] ?? data[layoutKey] ?? [];
     return acc;
   }, {});
+  return filteredDetailTabs;
+};
+
+// Nueva función para extraer variables de una expresión
+const extractVariablesFromExpression = (definition) => {
+  const tokens = tokenizeDefinition(definition);
+  const variables = new Set();
+
+  tokens.forEach((token) => {
+    if (typeof token === "string" && !OPERATORS.has(token)) {
+      const numeric = Number(token);
+      if (Number.isNaN(numeric)) {
+        // Es una variable, no un número
+        variables.add(token);
+      }
+    }
+  });
+
+  return Array.from(variables);
+};
+
+// Nueva función para construir un mapa de dependencias
+export const buildDependencyMap = (fields) => {
+  const fieldList = flattenStructure(fields);
+  const dependencies = new Map();
+
+  fieldList.forEach((field) => {
+    const fieldName = field.field ?? field.name;
+    if (!fieldName) {
+      return;
+    }
+
+    // Inicializar entrada para este campo
+    if (!dependencies.has(fieldName)) {
+      dependencies.set(fieldName, { dependsOn: [], affectedBy: [] });
+    }
+
+    // Si tiene función, encontrar de qué variables depende
+    if (field.func) {
+      const variables = extractVariablesFromExpression(field.func);
+      dependencies.get(fieldName).dependsOn = variables;
+
+      // Actualizar los campos de los que depende para marcar que afectan a este campo
+      variables.forEach((varName) => {
+        if (!dependencies.has(varName)) {
+          dependencies.set(varName, { dependsOn: [], affectedBy: [] });
+        }
+        dependencies.get(varName).affectedBy.push(fieldName);
+      });
+    }
+
+    // Si tiene función agregada, depende del layout
+    if (field.func_agg && field.agg_over_layout) {
+      const layoutDep = `__layout_${field.agg_over_layout}`;
+      dependencies.get(fieldName).dependsOn.push(layoutDep);
+
+      if (!dependencies.has(layoutDep)) {
+        dependencies.set(layoutDep, { dependsOn: [], affectedBy: [] });
+      }
+      dependencies.get(layoutDep).affectedBy.push(fieldName);
+
+      // También extraer variables de fields_agg si existe
+      if (field.fields_agg) {
+        const aggVariables = extractVariablesFromExpression(field.fields_agg);
+        aggVariables.forEach((varName) => {
+          const layoutVarDep = `__layout_${field.agg_over_layout}_${varName}`;
+          dependencies.get(fieldName).dependsOn.push(layoutVarDep);
+
+          if (!dependencies.has(layoutVarDep)) {
+            dependencies.set(layoutVarDep, { dependsOn: [], affectedBy: [] });
+          }
+          dependencies.get(layoutVarDep).affectedBy.push(fieldName);
+        });
+      }
+    }
+  });
+
+  return dependencies;
+};
+
+// Nueva función para obtener campos afectados por un cambio
+export const getAffectedFields = (changedFields, dependencyMap) => {
+  const affectedFields = new Set();
+  const toProcess = [...changedFields];
+  const processed = new Set();
+
+  while (toProcess.length > 0) {
+    const fieldName = toProcess.shift();
+    if (processed.has(fieldName)) {
+      continue;
+    }
+    processed.add(fieldName);
+
+    const dependency = dependencyMap.get(fieldName);
+    if (dependency && dependency.affectedBy.length > 0) {
+      dependency.affectedBy.forEach((affectedField) => {
+        if (!processed.has(affectedField)) {
+          affectedFields.add(affectedField);
+          toProcess.push(affectedField);
+        }
+      });
+    }
+  }
+
+  return Array.from(affectedFields);
 };

@@ -149,6 +149,8 @@ const CustomForm = ({
   extraFormItems = [],
   flex = false,
   hiddenFields = [],
+  onValuesChange = null,
+  onFieldBlur = null,
 }) => {
   // const { saveFile, url, field } = useSaveFbFile();
 
@@ -156,7 +158,21 @@ const CustomForm = ({
     onFinish({ ...values });
   };
 
-  const getInput = (field, fieldType, submitOnEnter = false) => {
+  const handleValuesChange = (changedValues, allValues) => {
+    if (onValuesChange && typeof onValuesChange === 'function') {
+      onValuesChange(changedValues, allValues);
+    }
+  };
+
+  const handleFieldBlur = (fieldName) => {
+    if (onFieldBlur && typeof onFieldBlur === 'function') {
+      const allValues = form.getFieldsValue(true);
+      const changedValues = { [fieldName]: allValues[fieldName] };
+      onFieldBlur(changedValues, allValues);
+    }
+  };
+
+  const getInput = (field, fieldType, submitOnEnter = false, fieldName = null) => {
     const disabled = !isEditableField(field);
 
     if (fieldType === "select") {
@@ -177,6 +193,7 @@ const CustomForm = ({
           field={field}
           calculateWidth={calculateWidth}
           disabled={disabled}
+          onBlur={fieldName ? () => handleFieldBlur(fieldName) : undefined}
         />
       );
     }
@@ -195,7 +212,7 @@ const CustomForm = ({
       );
     }
 
-    return getComponent(field, fieldType, submitOnEnter, disabled);
+    return getComponent(field, fieldType, submitOnEnter, disabled, fieldName);
   };
 
   const validateRut = (value) => {
@@ -271,13 +288,14 @@ const CustomForm = ({
         labelCol={{ style: { marginBottom: 0, paddingBottom: 0 } }}
         initialValue={initialValue}
       >
-        {getInput(field, fieldType, submitOnEnter)}
+        {getInput(field, fieldType, submitOnEnter, fieldName)}
       </Form.Item>
     );
   };
-  const getComponent = (field, fieldType, submitOnEnter, disabled) => {
+  const getComponent = (field, fieldType, submitOnEnter, disabled, fieldName) => {
     const sharedProps = {
       onPressEnter: submitOnEnter ? () => form.submit() : undefined,
+      onBlur: fieldName ? () => handleFieldBlur(fieldName) : undefined,
       className: "form-input mt-1 block w-full",
       style: {
         width: ["date", "time", "datetime", "dateRange"].includes(fieldType)

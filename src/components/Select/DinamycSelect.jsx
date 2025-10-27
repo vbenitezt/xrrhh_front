@@ -1,7 +1,7 @@
 import { Select } from "antd";
 import { useSelectOptions } from "../../services/selects";
 
-export default function DynamicSelect({ field, calculateWidth, value, onChange, disabled = false }) {
+export default function DynamicSelect({ field, calculateWidth, value, onChange, disabled = false, onBlur }) {
 
   const { options, isLoading } = useSelectOptions(field);
 
@@ -24,6 +24,7 @@ export default function DynamicSelect({ field, calculateWidth, value, onChange, 
       loading={isLoading}
       value={value}        // <-- valor actual del campo
       onChange={onChange}  // <-- callback para actualizar el valor
+      onBlur={onBlur}      // <-- callback para cuando pierde foco
       disabled={disabled}
     >
       {opts.map(opt => (

@@ -1,3 +1,4 @@
+import React from "react";
 import { Avatar, Image, Popconfirm } from "antd";
 import { QuestionCircleOutlined } from "@ant-design/icons";
 import { formatNumber } from "../../utils/formatMoney";
@@ -265,7 +266,9 @@ export const makeColumns = ({
       width: 100,
       render: (row) => (
         <div className="flex flex-row gap-1 justify-center text-center">
-          {getExtraActions(row)?.map(extraAction => extraAction)}
+          {getExtraActions(row)?.map((extraAction, index) => 
+            React.cloneElement(extraAction, { key: `extra-action-${index}` })
+          )}
           <EditButton
             title={`Editar ${title}`}
             type="text"

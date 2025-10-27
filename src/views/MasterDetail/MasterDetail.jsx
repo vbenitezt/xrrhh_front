@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { AddButton, ClearButton, CloseButton, EditButton, PreviousButton, RemoveButton, SaveButton } from "../../components/Buttons/CustomButtons";
 import { Divider, Popconfirm, Tabs } from "antd";
@@ -17,6 +17,8 @@ import {
     filterFormStructure,
     flattenStructure,
     normalizeStructure,
+    buildDependencyMap,
+    getAffectedFields,
 } from "../../utils/fieldStructure";
 import { v4 } from "uuid";
 import { useQueryClient } from "@tanstack/react-query";
@@ -32,6 +34,12 @@ const MasterDetail = ({
     const [recordParams, setRecordParams] = useSearchParams();
 
     const [selectedTab, setSelectedTab] = useState();
+
+    // Referencias para prevenir loops infinitos
+    const isRecalculatingHeader = useRef(false);
+    const isRecalculatingDetail = useRef(false);
+    const headerRecalculationTimeout = useRef(null);
+    const detailRecalculationTimeout = useRef(null);
 
     const {
         data: masterDetailStructure, isLoading: isStructureLoading, error, isError
@@ -49,6 +57,12 @@ const MasterDetail = ({
         [normalizedHeaderStructure]
     );
 
+    // Crear mapa de dependencias para el header
+    const headerDependencyMap = useMemo(
+        () => normalizedHeaderStructure ? buildDependencyMap(normalizedHeaderStructure) : new Map(),
+        [normalizedHeaderStructure]
+    );
+
     const detailTabs = useMemo(() => {
         if (!Array.isArray(detail_structure)) {
             return [];
@@ -57,6 +71,7 @@ const MasterDetail = ({
             ...tab,
             structure: normalizeStructure(tab.structure),
             formStructure: filterFormStructure(tab.structure),
+            dependencyMap: buildDependencyMap(normalizeStructure(tab.structure)),
         }));
     }, [detail_structure]);
 
@@ -70,6 +85,8 @@ const MasterDetail = ({
             return;
         }
 
+        console.log('🔄 [HEADER-INITIAL] Recálculo inicial de valores del header');
+
         const layoutsData = buildLayoutsData(detailTabs, nextData);
         const currentValues = headerForm.getFieldsValue(true);
         const computedValues = calculateFieldValues({
@@ -78,13 +95,88 @@ const MasterDetail = ({
             layouts: layoutsData,
         });
 
+        console.log('📊 [HEADER-INITIAL] Valores computados iniciales:', computedValues);
+
+        let updatedFields = [];
         Object.entries(computedValues).forEach(([key, value]) => {
             const currentValue = headerForm.getFieldValue(key);
             if (!isEqual(currentValue, value)) {
+                console.log(`✅ [HEADER-INITIAL] Actualizando campo "${key}":`, 
+                          `${currentValue} → ${value}`);
                 headerForm.setFieldValue(key, value);
+                updatedFields.push(key);
             }
         });
+
+        if (updatedFields.length > 0) {
+            console.log('🎉 [HEADER-INITIAL] Campos actualizados exitosamente:', updatedFields);
+        } else {
+            console.log('ℹ️ [HEADER-INITIAL] No se requirieron actualizaciones iniciales');
+        }
     }, [detailTabs, headerForm, normalizedHeaderStructure]);
+
+    // Función para manejar cambios en el formulario header y recalcular campos afectados
+    const handleHeaderValuesChange = useCallback((changedValues, allValues) => {
+        if (!normalizedHeaderStructure || !changedValues || isRecalculatingHeader.current) {
+            return;
+        }
+
+        // Limpiar timeout anterior si existe
+        if (headerRecalculationTimeout.current) {
+            clearTimeout(headerRecalculationTimeout.current);
+        }
+
+        // Usar debounce para evitar recálculos excesivos
+        headerRecalculationTimeout.current = setTimeout(() => {
+            const changedFields = Object.keys(changedValues);
+            const affectedFields = getAffectedFields(changedFields, headerDependencyMap);
+
+            console.log('🔄 [HEADER] Campo que perdió foco:', changedFields);
+            console.log('🎯 [HEADER] Campos afectados:', affectedFields);
+
+            if (affectedFields.length > 0) {
+                isRecalculatingHeader.current = true;
+                
+                const layoutsData = buildLayoutsData(detailTabs, data);
+                const computedValues = calculateFieldValues({
+                    fields: normalizedHeaderStructure,
+                    values: allValues,
+                    layouts: layoutsData,
+                });
+
+                console.log('📊 [HEADER] Valores computados:', computedValues);
+
+                // Solo actualizar los campos afectados
+                let updatedFields = [];
+                affectedFields.forEach((fieldName) => {
+                    if (computedValues[fieldName] !== undefined) {
+                        const currentValue = headerForm.getFieldValue(fieldName);
+                        if (!isEqual(currentValue, computedValues[fieldName])) {
+                            console.log(`✅ [HEADER] Actualizando campo "${fieldName}":`, 
+                                      `${currentValue} → ${computedValues[fieldName]}`);
+                            headerForm.setFieldValue(fieldName, computedValues[fieldName]);
+                            updatedFields.push(fieldName);
+                        }
+                    }
+                });
+
+                if (updatedFields.length > 0) {
+                    console.log('🎉 [HEADER] Campos actualizados exitosamente:', updatedFields);
+                } else {
+                    console.log('ℹ️ [HEADER] No se requirieron actualizaciones');
+                }
+
+                // Resetear flag después de un breve delay
+                setTimeout(() => {
+                    isRecalculatingHeader.current = false;
+                }, 100);
+            } else {
+                console.log('⏭️ [HEADER] No hay campos afectados para recalcular');
+            }
+        }, 150);
+    }, [normalizedHeaderStructure, headerDependencyMap, detailTabs, data, headerForm]);
+
+
 
     // Initial data
     useEffect(() => {
@@ -148,7 +240,9 @@ const MasterDetail = ({
             headerPayload[header_pk] = formattedValues[header_pk];
         }
 
-        const detailPayload = detailTabs.reduce((acc, tab) => {
+        const detailPayload = detailTabs
+        .filter(tab => !tab.view_only)
+        .reduce((acc, tab) => {
             const tabData = data[tab.name] ?? [];
             acc[tab.name] = Array.isArray(tabData)
                 ? tabData.map((row) =>
@@ -185,16 +279,87 @@ const MasterDetail = ({
         recomputeHeaderValues(data);
     }, [data, detailTabs, recomputeHeaderValues])
 
+    // Cleanup de timeouts al desmontar el componente
+    useEffect(() => {
+        return () => {
+            if (headerRecalculationTimeout.current) {
+                clearTimeout(headerRecalculationTimeout.current);
+            }
+            if (detailRecalculationTimeout.current) {
+                clearTimeout(detailRecalculationTimeout.current);
+            }
+        };
+    }, []);
+
     const handleSelectedTab = (tab) => {
         setSelectedTab(tab);
     }
 
     const tabSelected = useMemo(() => {
         if (!selectedTab || !detailTabs.length) {
-            return [];
+            return null;
         }
         return detailTabs.find(tab => tab.name === selectedTab);
     }, [detailTabs, selectedTab]);
+
+    // Función para manejar cambios en el formulario de detalle
+    const handleDetailValuesChange = useCallback((changedValues, allValues) => {
+        if (!tabSelected || !changedValues || isRecalculatingDetail.current) {
+            return;
+        }
+
+        // Limpiar timeout anterior si existe
+        if (detailRecalculationTimeout.current) {
+            clearTimeout(detailRecalculationTimeout.current);
+        }
+
+        // Usar debounce para evitar recálculos excesivos
+        detailRecalculationTimeout.current = setTimeout(() => {
+            const changedFields = Object.keys(changedValues);
+            const affectedFields = getAffectedFields(changedFields, tabSelected.dependencyMap);
+
+            console.log(`🔄 [DETALLE - ${tabSelected.name}] Campo que perdió foco:`, changedFields);
+            console.log(`🎯 [DETALLE - ${tabSelected.name}] Campos afectados:`, affectedFields);
+
+            if (affectedFields.length > 0) {
+                isRecalculatingDetail.current = true;
+                
+                const computedValues = calculateFieldValues({
+                    fields: tabSelected.structure,
+                    values: allValues,
+                });
+
+                console.log(`📊 [DETALLE - ${tabSelected.name}] Valores computados:`, computedValues);
+
+                // Solo actualizar los campos afectados
+                let updatedFields = [];
+                affectedFields.forEach((fieldName) => {
+                    if (computedValues[fieldName] !== undefined) {
+                        const currentValue = detailsForm.getFieldValue(fieldName);
+                        if (!isEqual(currentValue, computedValues[fieldName])) {
+                            console.log(`✅ [DETALLE - ${tabSelected.name}] Actualizando campo "${fieldName}":`, 
+                                      `${currentValue} → ${computedValues[fieldName]}`);
+                            detailsForm.setFieldValue(fieldName, computedValues[fieldName]);
+                            updatedFields.push(fieldName);
+                        }
+                    }
+                });
+
+                if (updatedFields.length > 0) {
+                    console.log(`🎉 [DETALLE - ${tabSelected.name}] Campos actualizados exitosamente:`, updatedFields);
+                } else {
+                    console.log(`ℹ️ [DETALLE - ${tabSelected.name}] No se requirieron actualizaciones`);
+                }
+
+                // Resetear flag después de un breve delay
+                setTimeout(() => {
+                    isRecalculatingDetail.current = false;
+                }, 100);
+            } else {
+                console.log(`⏭️ [DETALLE - ${tabSelected.name}] No hay campos afectados para recalcular`);
+            }
+        }, 150);
+    }, [tabSelected, detailsForm]);
 
     const handleAddItem = async (item) => {
         if (!tabSelected) {
@@ -330,8 +495,8 @@ const MasterDetail = ({
                     }
                     {
                         getExtraActionButtons &&
-                        getExtraActionButtons(header_data).map(extraActionButton => {
-                            return extraActionButton;
+                        getExtraActionButtons(header_data).map((extraActionButton, index) => {
+                            return React.cloneElement(extraActionButton, { key: `extra-header-action-${index}` });
                         })
                     }
                     <Popconfirm
@@ -356,6 +521,7 @@ const MasterDetail = ({
                         fields={headerFormStructure}
                         flex={true}
                         onFinish={handleSave}
+                        onFieldBlur={handleHeaderValuesChange}
                         hiddenFields={[header_pk, ...(hidden_fields ?? [])].filter(Boolean)}
                     />
                 </div>
@@ -369,6 +535,7 @@ const MasterDetail = ({
             </Divider>
             <div className="flex flex-row w-full h-5/12">
                 {/* Buttons */}
+                {!tabSelected?.view_only && (
                 <div className="flex flex-col gap-1 pr-3 h-full">
                     <AddButton
                         onClick={() => detailsForm.submit()}
@@ -392,6 +559,7 @@ const MasterDetail = ({
                     <Divider style={{ margin: "5px 0 5px 0", padding: "0px" }} />
                     <ClearButton onClick={() => detailsForm.resetFields()} />
                 </div>
+                )}
                 <Tabs
                     className="w-full"
                     type="card"
@@ -406,26 +574,30 @@ const MasterDetail = ({
                                 <>
                                     {/* Form / Table */}
                                     <div className="flex flex-col gap-1 h-full">
-                                        <CustomForm
-                                            flex={true}
-                                            form={detailsForm}
-                                            fields={tab.formStructure}
-                                            onFinish={handleAddItem}
-                                            hiddenFields={tabSelected.pk ? [tabSelected.pk] : []}
-                                        />
+                                        {!tab.view_only && (
+                                            <CustomForm
+                                                flex={true}
+                                                form={detailsForm}
+                                                fields={tab.formStructure}
+                                                onFinish={handleAddItem}
+                                                onFieldBlur={handleDetailValuesChange}
+                                                hiddenFields={tab.pk ? [tab.pk] : []}
+                                            />
+                                        )}
                                         <AntTable
                                             data={data[tab.name] ?? []}
                                             columns={makeColumns({
                                                 pk: tab.pk,
                                                 title: tab.label,
                                                 form: detailsForm,
-                                                remove: handleRemoveItem,
-                                                setEditing: handleEditItem,
+                                                remove: !tab.view_only && handleRemoveItem,
+                                                setEditing: !tab.view_only && handleEditItem,
                                                 setIsModalOpen: () => { },
                                                 fields_structure: tab.structure,
                                                 tableData: data[tab.name] ?? [],
                                                 getExtraActions: () => { },
                                                 fromMasterDetail: true,
+                                                disableEdition: tab.view_only
                                             })}
                                             total={false}
                                             pagination={false}
