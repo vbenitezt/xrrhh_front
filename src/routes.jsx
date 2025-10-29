@@ -72,9 +72,50 @@ import {
 import Home from "./pages/home/Home";
 import Empleado from "./pages/maestros/empleados/Empleado";
 import GenericMaster from "./pages/maestros/generic_master/GenericMaster";
+import GenericMasterDetail from "./pages/maestros/genericMasterDetail/GenericMasterDetail";
+// import EstructuraOrganizacional from "./pages/EstructuraOrganizacional";
+// import EstructuraOrganizacionalTree from "./pages/EstructuraOrganizacionalTree";
+// import EstructuraOrganizacionalOrganigrama from "./pages/EstructuraOrganizacionalOrganigrama";
+// import TestReactFlow from "./pages/TestReactFlow";
 
 const getRoutes = ({ profile }) => { // eslint-disable-line no-unused-vars
   const routes = [
+//     {
+//   component: EstructuraOrganizacional,
+//   type: "route",
+//   path: "/organizacion/estructura",
+//   label: "Estructura Organizacional",
+//   icon: MdAccountTree,
+//   props: {},
+//   insideBar: true
+// },
+// {
+//   component: EstructuraOrganizacionalTree,
+//   type: "route",
+//   path: "/organizacion/estructura-arbol",
+//   label: "Estructura Organizacional (Árbol)",
+//   icon: MdAccountTree,
+//   props: {},
+//   insideBar: true
+// },
+// {
+//   component: EstructuraOrganizacionalOrganigrama,
+//   type: "route",
+//   path: "/organizacion/organigrama",
+//   label: "Organigrama",
+//   icon: MdAccountTree,
+//   props: {},
+//   insideBar: true
+// },
+// {
+//   component: TestReactFlow,
+//   type: "route",
+//   path: "/test-reactflow",
+//   label: "Test ReactFlow",
+//   icon: MdAccountTree,
+//   props: {},
+//   insideBar: true
+// },
   /* ===========================
    *        SISTEMA
    * =========================== */
@@ -382,56 +423,56 @@ const getRoutes = ({ profile }) => { // eslint-disable-line no-unused-vars
         insideBar: true,
         children: [
           {
-            component: GenericMaster,
+            component: GenericMasterDetail,
             type: "route",
-            path: "/gm/empresa",
+            path: "/gmd/empresa",
             label: "Empresa",
             icon: MdCorporateFare,
             props: {
               pk: "rut_empresa",
-              path: "gm/empresa",
+              path: "gmd/empresa",
               title: "Empresa",
               title_plural: "Empresas"
             },
             insideBar: true
           },
           {
-            component: GenericMaster,
+            component: GenericMasterDetail,
             type: "route",
-            path: "/gm/sucursal",
+            path: "/gmd/sucursal",
             label: "Sucursales",
             icon: MdStore,
             props: {
               pk: "cod_sucursal",
-              path: "gm/sucursal",
+              path: "gmd/sucursal",
               title: "Sucursal",
               title_plural: "Sucursales"
             },
             insideBar: true
           },
           {
-            component: GenericMaster,
+            component: GenericMasterDetail,
             type: "route",
-            path: "/gm/departamento",
+            path: "/gmd/departamento",
             label: "Departamentos",
             icon: MdAccountTree,
             props: {
               pk: "cod_departamento",
-              path: "gm/departamento",
+              path: "gmd/departamento",
               title: "Departamento",
               title_plural: "Departamentos"
             },
             insideBar: true
           },
           {
-            component: GenericMaster,
+            component: GenericMasterDetail,
             type: "route",
-            path: "/gm/cargo",
+            path: "/gmd/cargo",
             label: "Cargos",
             icon: MdWork,
             props: {
               pk: "cod_cargo",
-              path: "gm/cargo",
+              path: "gmd/cargo",
               title: "Cargo",
               title_plural: "Cargos"
             },
@@ -449,7 +490,7 @@ const getRoutes = ({ profile }) => { // eslint-disable-line no-unused-vars
               title: "Centro de Costo",
               title_plural: "Centros de Costo"
             },
-            insideBar: true
+            insideBar: false
           },
           {
             component: GenericMaster,
@@ -505,17 +546,45 @@ const getRoutes = ({ profile }) => { // eslint-disable-line no-unused-vars
         icon: MdGroups,
         insideBar: true,
         children: [
+          // {
+          //   component: Empleado, // si tienes componente específico, si no usar GenericMaster
+          //   type: "route",
+          //   path: "/gm/empleado",
+          //   label: "Empleados",
+          //   icon: MdPerson,
+          //   props: {
+          //     pk: "cod_empleado",
+          //     path: "gm/empleado",
+          //     title: "Empleado",
+          //     title_plural: "Empleados"
+          //   },
+          //   insideBar: true
+          // },
           {
-            component: Empleado, // si tienes componente específico, si no usar GenericMaster
+            component: GenericMasterDetail, // si tienes componente específico, si no usar GenericMaster
             type: "route",
             path: "/gm/empleado",
-            label: "Empleados",
+            label: "Empleados.",
             icon: MdPerson,
             props: {
               pk: "cod_empleado",
-              path: "gm/empleado",
-              title: "Empleado",
-              title_plural: "Empleados"
+              path: "empleados",
+              title: "Empleado.",
+              title_plural: "Empleados."
+            },
+            insideBar: true
+          },
+          {
+            component: GenericMasterDetail, // si tienes componente específico, si no usar GenericMaster
+            type: "route",
+            path: "/md/cargos",
+            label: "Cargos.",
+            icon: MdPerson,
+            props: {
+              pk: "cod_cargo",
+              path: "cargos",
+              title: "Cargo.",
+              title_plural: "Cargos."
             },
             insideBar: true
           },
@@ -534,14 +603,14 @@ const getRoutes = ({ profile }) => { // eslint-disable-line no-unused-vars
             insideBar: false
           },
           {
-            component: GenericMaster,
+            component: GenericMasterDetail,
             type: "route",
-            path: "/gm/nacionalidad",
-            label: "Nacionalidades",
+            path: "/gmd/nacionalidad",
+            label: "Nacionalidadess",
             icon: MdPublic,
             props: {
               pk: "cod_nacionalidad",
-              path: "gm/nacionalidad",
+              path: "gmd/nacionalidad",
               title: "Nacionalidad",
               title_plural: "Nacionalidades"
             },
@@ -615,14 +684,14 @@ const getRoutes = ({ profile }) => { // eslint-disable-line no-unused-vars
             insideBar: true
           },
           {
-            component: GenericMaster,
+            component: GenericMasterDetail,
             type: "route",
             path: "/gm/prevision",
             label: "Previsión",
             icon: MdSecurity,
             props: {
               pk: "cod_prevision",
-              path: "gm/prevision",
+              path: "gmd/prevision",
               title: "Previsión",
               title_plural: "Previsiones"
             },
@@ -705,7 +774,7 @@ const getRoutes = ({ profile }) => { // eslint-disable-line no-unused-vars
             label: "Topes de Impuestos",
             icon: MdPercent,
             props: {
-              pk: "cod_tope_impuesto",
+              pk: "cod_topes_impuestos",
               path: "gm/topes_impuestos",
               title: "Tope de Impuesto",
               title_plural: "Topes de Impuestos"
