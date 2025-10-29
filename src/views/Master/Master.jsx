@@ -6,7 +6,7 @@ import FlexColumn from "../../components/Structure/FlexColumn";
 import AntTable from "../../components/Tables/AntTable";
 import { Form } from "antd";
 import Spinner from "../../components/Loading/Spinner";
-import { makeColumns, makeExtraButtons } from "./master.base";
+import { makeColumns, makeMasterHeaderExtraButtons } from "./master.base";
 import { buildSubmissionPayload, filterFormStructure, normalizeStructure } from "../../utils/fieldStructure";
 import {
   useButtonAction,
@@ -51,7 +51,7 @@ const Master = ({
   );
 
   const { mutate: save, isPending: isSaving } = useSaveRecord(path, title);
-  const { mutate: callButtonAction, isPending: isCallingButtonAction } = useButtonAction(path);
+  const { mutate: callButtonAction, isPending: isCallingButtonAction } = useButtonAction();
   const { mutate: remove, isPending: isRemoving } = useDeleteRecord(
     path,
     title
@@ -119,7 +119,7 @@ const Master = ({
         width={600}
         headTitle={headTitle}
         extraButtons={[
-          ...(makeExtraButtons(definedExtraButtons, callButtonAction, selectedRowKeys, isCallingButtonAction) ?? []),
+          ...(makeMasterHeaderExtraButtons(definedExtraButtons, callButtonAction, selectedRowKeys, isCallingButtonAction) ?? []),
           ...(extraButtons ?? []),
         ]}
         component={

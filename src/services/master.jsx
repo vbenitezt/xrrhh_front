@@ -120,11 +120,11 @@ export const useUploadExcel = (path) => {
 };
 
 
-export const useButtonAction = (path) => {
+export const useButtonAction = () => {
   const { notify } = useNotification();
   return useMutation({
-    mutationFn: ({ subPath, body }) => {
-      return axiosPost(`${path}${subPath}`, body)
+    mutationFn: ({ path, body }) => {
+      return axiosPost(`${path}`, body)
     },
     onSuccess: (response) => {
       if (response) {

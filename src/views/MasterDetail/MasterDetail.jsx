@@ -22,6 +22,8 @@ import {
 } from "../../utils/fieldStructure";
 import { v4 } from "uuid";
 import { useQueryClient } from "@tanstack/react-query";
+import { useButtonAction } from "../../services/master";
+import { makeMasterDetailHeaderExtraButtons } from "./masterDetail.base";
 
 
 const MasterDetail = ({
@@ -45,7 +47,14 @@ const MasterDetail = ({
         data: masterDetailStructure, isLoading: isStructureLoading, error, isError
     } = useGetDetailsStructure(`${path}/details/${recordParams.get(mdPk)}`, extraParams);
 
-    const { header_pk, header_structure, header_data, detail_structure, hidden_fields } = masterDetailStructure ? masterDetailStructure : {};
+    const {
+        header_pk,
+        header_structure,
+        header_data,
+        detail_structure,
+        hidden_fields,
+        header_buttons: definedExtraButtons
+    } = masterDetailStructure ? masterDetailStructure : {};
 
     const normalizedHeaderStructure = useMemo(
         () => normalizeStructure(header_structure),
@@ -79,6 +88,7 @@ const MasterDetail = ({
         mutate: saveRecord, isPending: isSavingLoading, isError: isSavingError, error: saveError
     } = useSaveRecord(`${path}/details/${recordParams.get(mdPk)}`, title, extraParams);
 
+    const { mutate: callButtonAction, isPending: isCallingButtonAction } = useButtonAction();
 
     const recomputeHeaderValues = useCallback((nextData) => {
         if (!normalizedHeaderStructure) {
@@ -101,8 +111,8 @@ const MasterDetail = ({
         Object.entries(computedValues).forEach(([key, value]) => {
             const currentValue = headerForm.getFieldValue(key);
             if (!isEqual(currentValue, value)) {
-                console.log(`✅ [HEADER-INITIAL] Actualizando campo "${key}":`, 
-                          `${currentValue} → ${value}`);
+                console.log(`✅ [HEADER-INITIAL] Actualizando campo "${key}":`,
+                    `${currentValue} → ${value}`);
                 headerForm.setFieldValue(key, value);
                 updatedFields.push(key);
             }
@@ -136,7 +146,7 @@ const MasterDetail = ({
 
             if (affectedFields.length > 0) {
                 isRecalculatingHeader.current = true;
-                
+
                 const layoutsData = buildLayoutsData(detailTabs, data);
                 const computedValues = calculateFieldValues({
                     fields: normalizedHeaderStructure,
@@ -152,8 +162,8 @@ const MasterDetail = ({
                     if (computedValues[fieldName] !== undefined) {
                         const currentValue = headerForm.getFieldValue(fieldName);
                         if (!isEqual(currentValue, computedValues[fieldName])) {
-                            console.log(`✅ [HEADER] Actualizando campo "${fieldName}":`, 
-                                      `${currentValue} → ${computedValues[fieldName]}`);
+                            console.log(`✅ [HEADER] Actualizando campo "${fieldName}":`,
+                                `${currentValue} → ${computedValues[fieldName]}`);
                             headerForm.setFieldValue(fieldName, computedValues[fieldName]);
                             updatedFields.push(fieldName);
                         }
@@ -241,16 +251,16 @@ const MasterDetail = ({
         }
 
         const detailPayload = detailTabs
-        .filter(tab => !tab.view_only)
-        .reduce((acc, tab) => {
-            const tabData = data[tab.name] ?? [];
-            acc[tab.name] = Array.isArray(tabData)
-                ? tabData.map((row) =>
-                    buildSubmissionPayload({ fields: tab.structure, values: row })
-                )
-                : [];
-            return acc;
-        }, {});
+            .filter(tab => !tab.view_only)
+            .reduce((acc, tab) => {
+                const tabData = data[tab.name] ?? [];
+                acc[tab.name] = Array.isArray(tabData)
+                    ? tabData.map((row) =>
+                        buildSubmissionPayload({ fields: tab.structure, values: row })
+                    )
+                    : [];
+                return acc;
+            }, {});
 
         const body = {
             ...headerPayload,
@@ -323,7 +333,7 @@ const MasterDetail = ({
 
             if (affectedFields.length > 0) {
                 isRecalculatingDetail.current = true;
-                
+
                 const computedValues = calculateFieldValues({
                     fields: tabSelected.structure,
                     values: allValues,
@@ -337,8 +347,8 @@ const MasterDetail = ({
                     if (computedValues[fieldName] !== undefined) {
                         const currentValue = detailsForm.getFieldValue(fieldName);
                         if (!isEqual(currentValue, computedValues[fieldName])) {
-                            console.log(`✅ [DETALLE - ${tabSelected.name}] Actualizando campo "${fieldName}":`, 
-                                      `${currentValue} → ${computedValues[fieldName]}`);
+                            console.log(`✅ [DETALLE - ${tabSelected.name}] Actualizando campo "${fieldName}":`,
+                                `${currentValue} → ${computedValues[fieldName]}`);
                             detailsForm.setFieldValue(fieldName, computedValues[fieldName]);
                             updatedFields.push(fieldName);
                         }
@@ -493,6 +503,7 @@ const MasterDetail = ({
                             <SaveButton size="default" />
                         </Popconfirm>
                     }
+                    {makeMasterDetailHeaderExtraButtons(definedExtraButtons, callButtonAction, recordParams.get(mdPk), isCallingButtonAction)}
                     {
                         getExtraActionButtons &&
                         getExtraActionButtons(header_data).map((extraActionButton, index) => {
@@ -536,29 +547,29 @@ const MasterDetail = ({
             <div className="flex flex-row w-full h-5/12">
                 {/* Buttons */}
                 {!tabSelected?.view_only && (
-                <div className="flex flex-col gap-1 pr-3 h-full">
-                    <AddButton
-                        onClick={() => detailsForm.submit()}
-                    />
-                    <EditButton
-                        title={`Editar seleccionado`}
-                        onClick={() => { selectedRows.length === 1 && handleEditItem(selectedRows[0], true) }}
-                    />
-                    <Popconfirm
-                        title="Cuidado!!!"
-                        description={`Está seguro de eliminar ${selectedRows.length > 1 ? "los detalles seleccionados" : "el detalle seleccionado"}?`}
-                        icon={<QuestionCircleOutlined style={{ color: "red" }} />}
-                        placement="left"
-                        onConfirm={() => { selectedRows.length > 0 && handleRemoveItem(null, selectedRows) }}
-                        okButtonProps={{ type: "default", danger: true }}
-                        okText="Si"
-                        cancelText="No"
-                    >
-                        <RemoveButton title={`Eliminar seleccionados`} />
-                    </Popconfirm>
-                    <Divider style={{ margin: "5px 0 5px 0", padding: "0px" }} />
-                    <ClearButton onClick={() => detailsForm.resetFields()} />
-                </div>
+                    <div className="flex flex-col gap-1 pr-3 h-full">
+                        <AddButton
+                            onClick={() => detailsForm.submit()}
+                        />
+                        <EditButton
+                            title={`Editar seleccionado`}
+                            onClick={() => { selectedRows.length === 1 && handleEditItem(selectedRows[0], true) }}
+                        />
+                        <Popconfirm
+                            title="Cuidado!!!"
+                            description={`Está seguro de eliminar ${selectedRows.length > 1 ? "los detalles seleccionados" : "el detalle seleccionado"}?`}
+                            icon={<QuestionCircleOutlined style={{ color: "red" }} />}
+                            placement="left"
+                            onConfirm={() => { selectedRows.length > 0 && handleRemoveItem(null, selectedRows) }}
+                            okButtonProps={{ type: "default", danger: true }}
+                            okText="Si"
+                            cancelText="No"
+                        >
+                            <RemoveButton title={`Eliminar seleccionados`} />
+                        </Popconfirm>
+                        <Divider style={{ margin: "5px 0 5px 0", padding: "0px" }} />
+                        <ClearButton onClick={() => detailsForm.resetFields()} />
+                    </div>
                 )}
                 <Tabs
                     className="w-full"

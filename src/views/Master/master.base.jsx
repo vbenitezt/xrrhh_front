@@ -9,7 +9,7 @@ import config from "../../common/config/config";
 import { evaluateExpression, flattenStructure, normalizeStructure } from "../../utils/fieldStructure";
 
 
-const getIconComponent = (iconName) => {
+export const getIconComponent = (iconName) => {
   if (!iconName || !icons[iconName]) return null;
   const IconComponent = icons[iconName];
   return <IconComponent />;
@@ -331,7 +331,7 @@ export const makeColumns = ({
 
 
 
-export const makeExtraButtons = (buttons = [], callApiFunction = () => { }, selectedRowKeys = [], isLoading = false) => {
+export const makeMasterHeaderExtraButtons = (buttons = [], callApiFunction = () => { }, selectedRowKeys = [], isLoading = false) => {
   const extraButtons = buttons.map((button, index) => {
     return (
       <CircleButton
@@ -341,7 +341,7 @@ export const makeExtraButtons = (buttons = [], callApiFunction = () => { }, sele
         loading={isLoading}
         icon={getIconComponent(button.icon)}
         disabled={button.only_selected_rows && selectedRowKeys.length === 0}
-        onClick={() => callApiFunction({ subPath: button.path, body: { selected_pks: selectedRowKeys } })}
+        onClick={() => callApiFunction({ path: button.path, body: { selected_pks: selectedRowKeys } })}
       />
     );
   });
