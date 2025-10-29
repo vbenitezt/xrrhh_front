@@ -81,7 +81,7 @@ const Master = ({
       fields: normalizedFieldsStructure,
       values: {
         ...d,
-        ...(editing ? { [pk]: editing } : {}),
+        ...((editing !== undefined) ? { [pk]: editing } : {}),
       },
     });
 

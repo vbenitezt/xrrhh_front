@@ -54,10 +54,19 @@ const tokenizeDefinition = (definition) => {
   }
 
   if (typeof definition === "object") {
-    return Object.keys(definition)
-      .map((key) => Number(key))
-      .sort((a, b) => a - b)
-      .map((key) => definition[key]);
+    const keys = Object.keys(definition);
+    const numericKeys = keys.map((key) => Number(key));
+    
+    // Validar claves duplicadas
+    const uniqueKeys = new Set(numericKeys);
+       
+    // Validar secuencia de claves
+    const sortedKeys = numericKeys.sort((a, b) => a - b);
+    const expectedKeys = Array.from({ length: sortedKeys.length }, (_, i) => i + 1);
+    const hasGaps = !sortedKeys.every((key, index) => key === expectedKeys[index]);
+    
+    
+    return sortedKeys.map((key) => definition[key]);
   }
 
   return [definition];
@@ -298,6 +307,17 @@ export const evaluateExpression = (definition, context = {}) => {
     return undefined;
   }
 
+  // Detectar si es una expresión de string concatenation
+  const isStringExpression = tokens.some(token => 
+    typeof token === 'string' && 
+    (token.includes('String(') || token.includes('"') || token.includes("'"))
+  );
+
+  if (isStringExpression) {
+    return evaluateStringExpression(tokens, context);
+  }
+
+  // Evaluación matemática original
   const values = [];
   const operators = [];
 
@@ -350,6 +370,33 @@ export const evaluateExpression = (definition, context = {}) => {
 
   const result = values.pop();
   return Number.isFinite(result) ? result : undefined;
+};
+
+// Nueva función para evaluar expresiones de string
+const evaluateStringExpression = (tokens, context = {}) => {
+  try {
+    // Unir todos los tokens en una expresión de JavaScript
+    let expression = tokens.join('');
+    
+    // Reemplazar variables del contexto
+    Object.keys(context).forEach(key => {
+      const value = context[key];
+      // Usar una expresión regular más específica para evitar reemplazos parciales
+      const regex = new RegExp(`\\b${key}\\b`, 'g');
+      if (value !== null && value !== undefined) {
+        expression = expression.replace(regex, JSON.stringify(String(value)));
+      } else {
+        expression = expression.replace(regex, '""');
+      }
+    });
+
+    // Evaluar la expresión de JavaScript de forma segura
+    const result = Function(`"use strict"; return (${expression})`)();
+    
+    return result;
+  } catch (error) {
+    return '';
+  }
 };
 
 export const evaluateAggregate = (fieldConfig, layoutsData = {}) => {
