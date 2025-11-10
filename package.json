@@ -20,7 +20,7 @@
     "antd": "^5.11.3",
     "axios": "^1.6.2",
     "chilean-rutify": "^2.1.0",
-    "dayjs": "^1.11.10",
+    "dayjs": "^1.11.19",
     "jose": "^5.2.3",
     "lodash": "^4.17.21",
     "pdf-viewer-reactjs": "^2.2.3",

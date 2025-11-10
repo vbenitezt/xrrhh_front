@@ -36,6 +36,7 @@ const { Search } = Input;
 const Layer = ({ children }) => {
 
   const navigate = useNavigate();
+  const location = useLocation();
 
   const { theme: currentTheme, changeTheme } = useThemeStore();
   const { selectedCompany, setSelectedCompany, search, setSearch } = useGlobalFilterStore();
@@ -43,6 +44,12 @@ const Layer = ({ children }) => {
   const { collapsed, setCollapsed } = useMenuStore();
 
   const [openDrawer, setOpenDrawer] = useState(false);
+
+  // Detectar si viene en modo embedded (sin layout)
+  const isEmbedded = useMemo(() => {
+    const params = new URLSearchParams(location.search);
+    return params.get('embedded') === 'true';
+  }, [location.search]);
 
   useEffect(() => {
     if (profile?.companies && profile?.companies?.length === 1) {
@@ -93,6 +100,15 @@ const Layer = ({ children }) => {
       icon: <LogoutOutlined />
     },
   ];
+
+  // Si está en modo embedded, solo renderizar el contenido sin layout
+  if (isEmbedded) {
+    return (
+      <div className="w-screen h-screen p-4" style={{ background: colorBgContainer }}>
+        {children}
+      </div>
+    );
+  }
 
   return (
     <Layout className="overflow-hidden w-screen h-screen">
