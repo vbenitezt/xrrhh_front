@@ -1,10 +1,11 @@
-import { Card, Typography, Statistic, Row, Col, Divider, Skeleton, Button, Tag } from "antd";
+import { Card, Typography, Skeleton, Button, Empty } from "antd";
 import { 
   DollarOutlined, 
   ArrowUpOutlined, 
   ArrowDownOutlined,
   FilePdfOutlined,
-  EyeOutlined
+  EyeOutlined,
+  WalletOutlined
 } from "@ant-design/icons";
 import dayjs from "dayjs";
 
@@ -23,7 +24,7 @@ const formatCurrency = (value) => {
 };
 
 /**
- * Tarjeta de última liquidación para empleados
+ * Tarjeta de última liquidación - Diseño moderno
  */
 export default function PayrollCard({
   liquidacion,
@@ -34,16 +35,13 @@ export default function PayrollCard({
 }) {
   if (loading) {
     return (
-      <Card 
-        title={
-          <span className="flex items-center gap-2">
-            <DollarOutlined style={{ color: "#3b82f6" }} />
-            Última Liquidación
-          </span>
-        }
-        className={className}
-      >
-        <Skeleton active paragraph={{ rows: 4 }} />
+      <Card className={`overflow-hidden ${className}`} styles={{ body: { padding: 0 } }}>
+        <div className="p-6 bg-gradient-to-br from-blue-500 to-indigo-600">
+          <Skeleton.Avatar active size={40} />
+        </div>
+        <div className="p-6">
+          <Skeleton active paragraph={{ rows: 2 }} />
+        </div>
       </Card>
     );
   }
@@ -51,103 +49,148 @@ export default function PayrollCard({
   if (!liquidacion) {
     return (
       <Card 
-        title={
-          <span className="flex items-center gap-2">
-            <DollarOutlined style={{ color: "#3b82f6" }} />
-            Última Liquidación
-          </span>
-        }
-        className={className}
+        className={`shadow-lg ${className}`}
+        styles={{ body: { padding: "2rem" } }}
       >
-        <div className="text-center py-8">
-          <Text type="secondary">No hay liquidaciones disponibles</Text>
-        </div>
+        <Empty
+          image={<WalletOutlined style={{ fontSize: 48, color: "#d1d5db" }} />}
+          imageStyle={{ height: 60 }}
+          description={
+            <Text type="secondary">No hay liquidaciones disponibles</Text>
+          }
+        />
       </Card>
     );
   }
 
   const { fecha, monto_liquido, total_haberes, total_descuentos, cod_liquidacion } = liquidacion;
+  const mesFormateado = dayjs(fecha).format("MMMM YYYY");
 
   return (
     <Card 
-      title={
-        <div className="flex items-center justify-between">
-          <span className="flex items-center gap-2">
-            <DollarOutlined style={{ color: "#3b82f6" }} />
-            Última Liquidación
-          </span>
-          <Tag color="blue">
-            {dayjs(fecha).format("MMMM YYYY")}
-          </Tag>
-        </div>
-      }
-      className={className}
-      extra={
-        <div className="flex gap-2">
-          {onViewDetail && (
-            <Button 
-              type="text" 
-              icon={<EyeOutlined />} 
-              onClick={() => onViewDetail(cod_liquidacion)}
-              size="small"
-            >
-              Ver
-            </Button>
-          )}
-          {onViewPDF && (
-            <Button 
-              type="primary" 
-              icon={<FilePdfOutlined />} 
-              onClick={() => onViewPDF(cod_liquidacion)}
-              size="small"
-            >
-              PDF
-            </Button>
-          )}
-        </div>
-      }
+      className={`overflow-hidden shadow-lg hover:shadow-xl transition-shadow duration-300 ${className}`}
+      styles={{ body: { padding: 0 } }}
     >
-      {/* Monto líquido destacado */}
-      <div className="text-center py-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl mb-4">
-        <Text type="secondary" className="text-sm">Líquido a Pagar</Text>
-        <Title 
-          level={2} 
-          style={{ 
-            color: "#3b82f6", 
-            margin: "8px 0 0 0",
-            fontWeight: 700 
-          }}
-        >
-          {formatCurrency(monto_liquido)}
-        </Title>
+      {/* Header con gradiente */}
+      <div 
+        className="p-5 relative overflow-hidden"
+        style={{
+          background: "linear-gradient(135deg, #3b82f6 0%, #6366f1 50%, #8b5cf6 100%)",
+        }}
+      >
+        {/* Círculo decorativo */}
+        <div 
+          className="absolute -right-10 -top-10 w-32 h-32 rounded-full"
+          style={{ backgroundColor: "rgba(255,255,255,0.1)" }}
+        />
+        <div 
+          className="absolute -right-5 -bottom-10 w-24 h-24 rounded-full"
+          style={{ backgroundColor: "rgba(255,255,255,0.05)" }}
+        />
+        
+        <div className="relative">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-3">
+              <div 
+                className="w-10 h-10 rounded-full flex items-center justify-center"
+                style={{ backgroundColor: "rgba(255,255,255,0.2)" }}
+              >
+                <DollarOutlined style={{ fontSize: 20, color: "white" }} />
+              </div>
+              <div>
+                <Title level={5} style={{ margin: 0, color: "white" }}>
+                  Última Liquidación
+                </Title>
+                <Text style={{ color: "rgba(255,255,255,0.8)", fontSize: "0.8rem", textTransform: "capitalize" }}>
+                  {mesFormateado}
+                </Text>
+              </div>
+            </div>
+          </div>
+
+          {/* Monto líquido */}
+          <div className="text-center py-2">
+            <Text style={{ color: "rgba(255,255,255,0.7)", fontSize: "0.85rem" }}>
+              Líquido a Pagar
+            </Text>
+            <div 
+              className="text-3xl font-bold text-white mt-1"
+              style={{ textShadow: "0 2px 10px rgba(0,0,0,0.2)" }}
+            >
+              {formatCurrency(monto_liquido)}
+            </div>
+          </div>
+        </div>
       </div>
 
       {/* Desglose */}
-      <Row gutter={16}>
-        <Col span={12}>
-          <div className="flex items-center gap-2 p-3 bg-green-50 rounded-lg">
-            <ArrowUpOutlined style={{ color: "#10b981", fontSize: "1.25rem" }} />
-            <div>
-              <Text type="secondary" className="text-xs block">Total Haberes</Text>
-              <Text strong style={{ color: "#10b981" }}>
-                {formatCurrency(total_haberes)}
-              </Text>
+      <div className="p-5">
+        <div className="grid grid-cols-2 gap-4 mb-4">
+          {/* Haberes */}
+          <div 
+            className="p-4 rounded-xl"
+            style={{ backgroundColor: "#f0fdf4" }}
+          >
+            <div className="flex items-center gap-2 mb-2">
+              <div 
+                className="w-8 h-8 rounded-full flex items-center justify-center"
+                style={{ backgroundColor: "#dcfce7" }}
+              >
+                <ArrowUpOutlined style={{ color: "#16a34a", fontSize: 14 }} />
+              </div>
+              <Text type="secondary" className="text-xs">Haberes</Text>
             </div>
+            <Text strong className="text-lg" style={{ color: "#16a34a" }}>
+              {formatCurrency(total_haberes)}
+            </Text>
           </div>
-        </Col>
-        <Col span={12}>
-          <div className="flex items-center gap-2 p-3 bg-red-50 rounded-lg">
-            <ArrowDownOutlined style={{ color: "#ef4444", fontSize: "1.25rem" }} />
-            <div>
-              <Text type="secondary" className="text-xs block">Total Descuentos</Text>
-              <Text strong style={{ color: "#ef4444" }}>
-                {formatCurrency(total_descuentos)}
-              </Text>
+
+          {/* Descuentos */}
+          <div 
+            className="p-4 rounded-xl"
+            style={{ backgroundColor: "#fef2f2" }}
+          >
+            <div className="flex items-center gap-2 mb-2">
+              <div 
+                className="w-8 h-8 rounded-full flex items-center justify-center"
+                style={{ backgroundColor: "#fee2e2" }}
+              >
+                <ArrowDownOutlined style={{ color: "#dc2626", fontSize: 14 }} />
+              </div>
+              <Text type="secondary" className="text-xs">Descuentos</Text>
             </div>
+            <Text strong className="text-lg" style={{ color: "#dc2626" }}>
+              {formatCurrency(total_descuentos)}
+            </Text>
           </div>
-        </Col>
-      </Row>
+        </div>
+
+        {/* Botones */}
+        {(onViewPDF || onViewDetail) && (
+          <div className="flex gap-2 pt-3 border-t border-gray-100">
+            {onViewDetail && (
+              <Button 
+                block
+                icon={<EyeOutlined />} 
+                onClick={() => onViewDetail(cod_liquidacion)}
+              >
+                Ver Detalle
+              </Button>
+            )}
+            {onViewPDF && (
+              <Button 
+                type="primary"
+                block
+                icon={<FilePdfOutlined />} 
+                onClick={() => onViewPDF(cod_liquidacion)}
+                style={{ backgroundColor: "#ef4444", borderColor: "#ef4444" }}
+              >
+                Descargar PDF
+              </Button>
+            )}
+          </div>
+        )}
+      </div>
     </Card>
   );
 }
-

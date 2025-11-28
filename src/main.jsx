@@ -1,6 +1,10 @@
 import React from "react";
 import { createRoot } from "react-dom/client";
 import App from "./App.jsx";
+import config from "./config/config.js";
+
+// Establecer título del documento
+document.title = config.app.name;
 
 // Configuración de Day.js
 import dayjs from "dayjs";
