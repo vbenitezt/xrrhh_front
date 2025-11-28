@@ -4,6 +4,7 @@ import * as FaIcons from 'react-icons/fa';
 import * as FiIcons from 'react-icons/fi';
 import * as AntIcons from '@ant-design/icons';
 import Home from "../pages/home/Home";
+import { DashboardEmpleado, DashboardAdmin, DashboardMobile } from "../pages/dashboard";
 import { 
   GenericMaster,
   GenericMasterDetail,
@@ -26,6 +27,10 @@ const componentMap = {
   GenericMasterDetailMobile: GenericMasterDetailMobile,
   MainMobile: MainMobile,
   PerfilMobile: PerfilMobile,
+  // Dashboards
+  DashboardEmpleado: DashboardEmpleado,
+  DashboardAdmin: DashboardAdmin,
+  DashboardMobile: DashboardMobile,
   // Agrega aquí tus componentes personalizados:
   // MiComponente: MiComponente,
 };

@@ -1,0 +1,189 @@
+/* ========================================
+   DASHBOARD MÓVIL - ESTILOS
+   Diseño nativo iOS/Android
+======================================== */
+
+/* Container principal */
+.dashboard-mobile {
+  min-height: 100vh;
+  background: linear-gradient(180deg, #3b82f6 0%, #2563eb 100%);
+  padding-bottom: env(safe-area-inset-bottom, 80px);
+  overflow-x: hidden;
+}
+
+/* Loading inicial */
+.dashboard-mobile-loading {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(180deg, #3b82f6 0%, #2563eb 100%);
+}
+
+.dashboard-mobile-loading .ant-typography {
+  color: white;
+}
+
+/* Pull-to-refresh */
+.pull-to-refresh-indicator {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.1);
+  transition: height 0.2s ease;
+}
+
+.refresh-icon {
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: white;
+  border-radius: 50%;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+.refresh-icon.spinning {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.refresh-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(255, 255, 255, 0.8);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  backdrop-filter: blur(4px);
+}
+
+/* Header del empleado */
+.mobile-header-card {
+  padding: 20px 16px;
+  margin: 0 16px 16px;
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 16px;
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+/* Contenido principal */
+.dashboard-mobile-content {
+  background: #f3f4f6;
+  border-radius: 24px 24px 0 0;
+  min-height: calc(100vh - 200px);
+  padding: 20px 16px;
+  margin-top: -8px;
+}
+
+/* Saludo */
+.dashboard-greeting {
+  margin-bottom: 16px;
+}
+
+/* Cards container */
+.dashboard-mobile-cards {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* Card base móvil */
+.mobile-card {
+  background: white;
+  border-radius: 16px;
+  padding: 16px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+  border: 1px solid rgba(0, 0, 0, 0.04);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  cursor: pointer;
+}
+
+.mobile-card:active {
+  transform: scale(0.98);
+  box-shadow: 0 0 0 rgba(0, 0, 0, 0);
+}
+
+/* Título de card */
+.mobile-card-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: #1f2937;
+}
+
+/* Icono circular */
+.mobile-icon-circle {
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Animación de skeleton */
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+.animate-pulse {
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+/* Safe area para iPhone */
+@supports (padding-bottom: env(safe-area-inset-bottom)) {
+  .dashboard-mobile {
+    padding-bottom: calc(env(safe-area-inset-bottom) + 80px);
+  }
+}
+
+/* Responsive ajustes */
+@media (min-width: 390px) {
+  .mobile-card {
+    padding: 20px;
+  }
+  
+  .dashboard-mobile-content {
+    padding: 24px 20px;
+  }
+}
+
+/* Dark mode soporte */
+@media (prefers-color-scheme: dark) {
+  .dashboard-mobile {
+    background: linear-gradient(180deg, #1e3a8a 0%, #1e40af 100%);
+  }
+  
+  .dashboard-mobile-content {
+    background: #111827;
+  }
+  
+  .mobile-card {
+    background: #1f2937;
+    border-color: #374151;
+  }
+  
+  .mobile-card-title {
+    color: #f3f4f6;
+  }
+  
+  .dashboard-greeting .ant-typography {
+    color: #f3f4f6 !important;
+  }
+}
+
+

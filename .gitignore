@@ -33,3 +33,9 @@ pnpm-debug.log*
 
 # Vite
 .vite
+
+# Fotos de prueba/desarrollo
+public/fotos/
+
+# Scripts de desarrollo local
+LINK_SETUP.md

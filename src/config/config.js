@@ -13,6 +13,7 @@ const config = {
   app: {
     name: import.meta.env.VITE_APP_NAME || 'Mi Aplicación',
     company: import.meta.env.VITE_APP_COMPANY || 'Mi Empresa',
+    logo: import.meta.env.VITE_APP_LOGO || '/logo.png',
   },
   
   // User Configuration - Mapeo de campos del usuario

@@ -1,0 +1,54 @@
+# ================================
+# Docker Compose para proyectos ruiBernate
+# ================================
+# 
+# Uso:
+#   Desarrollo:   docker-compose up
+#   Producción:   docker-compose -f docker-compose.yml -f docker-compose.prod.yml up
+#   Build:        docker-compose build --build-arg VITE_API_URL=https://api.ejemplo.com
+#
+# ================================
+
+version: '3.8'
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        - VITE_API_URL=${VITE_API_URL:-http://localhost:8000}
+        - VITE_APP_NAME=${VITE_APP_NAME:-Mi Aplicación}
+        - VITE_APP_COMPANY=${VITE_APP_COMPANY:-Mi Empresa}
+        - GITHUB_TOKEN=${GITHUB_TOKEN}
+    ports:
+      - "${PORT:-3000}:80"
+    environment:
+      - NODE_ENV=production
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+# ================================
+# Uso con variables de entorno:
+#
+# 1. Crear archivo .env con:
+#    VITE_API_URL=https://api.midominio.com
+#    VITE_APP_NAME=Mi App
+#    PORT=8080
+#
+# 2. Ejecutar:
+#    docker-compose up --build
+#
+# ================================
+# Para producción con SSL (usando Traefik/nginx proxy):
+#
+# docker-compose -f docker-compose.yml up -d
+#
+# Luego configurar tu reverse proxy para apuntar al puerto expuesto
+# ================================
+

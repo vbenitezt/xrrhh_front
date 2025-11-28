@@ -7,6 +7,7 @@ import {
   Layer,
   ProtectedRoute,
   MobileRedirect,
+  NotFound,
   useAuthStore,
   useRoutesStore,
   createAxiosInstance
@@ -63,7 +64,7 @@ function App() {
       return (
         <Route
           path={route.path}
-          element={<route.component />}
+          element={<route.component config={config} />}
           key={index}
         >
           {route.children?.map((child, childIndex) => (
@@ -111,6 +112,9 @@ function App() {
                   {/* Rutas protegidas */}
                   <Route element={<ProtectedRoute isAllowed={isAuth} />}>
                     {routes}
+                    
+                    {/* Ruta 404 - Captura rutas no válidas */}
+                    <Route path="*" element={<NotFound />} />
                   </Route>
                 </Routes>
               </MobileRedirect>
