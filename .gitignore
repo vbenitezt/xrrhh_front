@@ -39,3 +39,4 @@ public/fotos/
 
 # Scripts de desarrollo local
 LINK_SETUP.md
+.env.prod
