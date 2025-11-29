@@ -6,7 +6,7 @@
 set -e
 
 # Configuración - CAMBIA ESTOS VALORES
-DOCKERHUB_USER="${DOCKERHUB_USER:-tu_usuario}"
+DOCKERHUB_USER="${DOCKERHUB_USER:-vbenitezt}"
 IMAGE_NAME="${IMAGE_NAME:-xrrhh-front}"
 VERSION="${VERSION:-latest}"
 

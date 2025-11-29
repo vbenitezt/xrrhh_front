@@ -1,16 +1,29 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { Card, Button, Switch, Typography, Space, Alert, message } from 'antd';
 import { 
   BellOutlined, 
   CheckCircleOutlined, 
   CloseCircleOutlined,
-  LoadingOutlined 
+  LoadingOutlined,
+  AppleFilled,
+  DownloadOutlined
 } from '@ant-design/icons';
 import { usePushNotifications } from '@xsolutioncl/ruibernate';
 import { useAxios } from '@xsolutioncl/ruibernate';
 import config from '@/config/config';
 
 const { Text, Title } = Typography;
+
+/**
+ * Detectar si es iOS y si está en modo PWA
+ */
+const detectiOS = () => {
+  const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || 
+    (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+  const isStandalone = window.matchMedia('(display-mode: standalone)').matches ||
+    window.navigator.standalone === true;
+  return { isIOS, isStandalone };
+};
 
 /**
  * Componente para configurar notificaciones push
@@ -71,8 +84,50 @@ export default function NotificationSettings({ compact = false }) {
     setTestLoading(false);
   };
 
+  // Detectar iOS
+  const { isIOS, isStandalone } = useMemo(() => detectiOS(), []);
+
   // Si no hay soporte para notificaciones
   if (!isSupported) {
+    // En iOS, mostrar instrucciones para instalar la PWA
+    if (isIOS && !isStandalone) {
+      if (compact) {
+        return (
+          <div className="p-3 bg-blue-50 rounded-lg border border-blue-200">
+            <Space direction="vertical" size={4} className="w-full">
+              <Space>
+                <AppleFilled className="text-gray-600" />
+                <Text strong className="text-sm">Notificaciones</Text>
+              </Space>
+              <Text type="secondary" className="text-xs">
+                Para recibir notificaciones, instala la app: 
+                Toca <DownloadOutlined /> y "Añadir a inicio"
+              </Text>
+            </Space>
+          </div>
+        );
+      }
+      return (
+        <Alert
+          message="Instala la app para notificaciones"
+          description={
+            <Space direction="vertical" size={4}>
+              <Text>En iOS, las notificaciones push solo funcionan con la app instalada.</Text>
+              <Text strong>Cómo instalar:</Text>
+              <ol className="ml-4 text-sm">
+                <li>Toca el botón de compartir (cuadrado con flecha)</li>
+                <li>Selecciona "Añadir a pantalla de inicio"</li>
+                <li>Abre la app desde tu pantalla de inicio</li>
+              </ol>
+            </Space>
+          }
+          type="info"
+          showIcon
+          icon={<AppleFilled />}
+        />
+      );
+    }
+    
     if (compact) return null;
     return (
       <Alert
