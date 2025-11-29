@@ -29,6 +29,16 @@ dayjs.locale("es");
 import "@xsolutioncl/ruibernate/styles";
 import "./index.css";
 
+// Registrar Service Worker para PWA
+if (config.pwa?.enabled && 'serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/sw.js')
+      .catch(() => {
+        // Service Worker registration failed silently
+      });
+  });
+}
+
 createRoot(document.getElementById("root")).render(
   <React.StrictMode>
     <App />

@@ -8,6 +8,7 @@ import {
   VacationCard,
   BirthdayCard,
   EventsCard,
+  NotificationSettings,
 } from "../../components/Dashboard";
 
 // Servicios
@@ -38,7 +39,6 @@ export default function DashboardEmpleado() {
   };
 
   const handleDownloadLiquidacion = (codLiquidacion) => {
-    console.log("Descargar liquidación:", codLiquidacion);
     // TODO: Implementar descarga de liquidación
   };
 
@@ -135,7 +135,7 @@ export default function DashboardEmpleado() {
           />
         </div>
 
-        {/* Segunda fila: Cumpleaños + Eventos | Vacaciones */}
+        {/* Segunda fila: Cumpleaños + Eventos | Vacaciones + Notificaciones */}
         <Row gutter={[16, 16]}>
           {/* Columna izquierda: Cumpleaños y Eventos apilados */}
           <Col xs={24} lg={12}>
@@ -156,17 +156,20 @@ export default function DashboardEmpleado() {
             </div>
           </Col>
 
-          {/* Columna derecha: Vacaciones (altura completa) */}
+          {/* Columna derecha: Vacaciones y Notificaciones */}
           <Col xs={24} lg={12}>
-            <VacationCard
-              diasDisponibles={vacaciones?.dias_disponibles}
-              diasTomados={vacaciones?.dias_tomados}
-              diasPendientes={vacaciones?.dias_pendientes}
-              solicitudes={mis_solicitudes_vacaciones}
-              vacacionesData={vacacionesData}
-              puedeSolicitar={vacacionesData?.puede_solicitar !== false}
-              className="h-full"
-            />
+            <div className="flex flex-col gap-4 h-full">
+              <VacationCard
+                diasDisponibles={vacaciones?.dias_disponibles}
+                diasTomados={vacaciones?.dias_tomados}
+                diasPendientes={vacaciones?.dias_pendientes}
+                solicitudes={mis_solicitudes_vacaciones}
+                vacacionesData={vacacionesData}
+                puedeSolicitar={vacacionesData?.puede_solicitar !== false}
+                className="flex-1"
+              />
+              <NotificationSettings />
+            </div>
           </Col>
         </Row>
       </div>

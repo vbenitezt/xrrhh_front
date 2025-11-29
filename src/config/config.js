@@ -16,6 +16,14 @@ const config = {
     logo: import.meta.env.VITE_APP_LOGO || '/logo.png',
   },
   
+  // PWA Configuration
+  pwa: {
+    enabled: import.meta.env.VITE_PWA_ENABLED === 'true',
+    vapidPublicKey: import.meta.env.VITE_VAPID_PUBLIC_KEY || '',
+    pushEndpoint: import.meta.env.VITE_PUSH_SUBSCRIBE_ENDPOINT || '/api/push/subscribe',
+    pushUnsubscribeEndpoint: import.meta.env.VITE_PUSH_UNSUBSCRIBE_ENDPOINT || '/api/push/unsubscribe',
+  },
+  
   // User Configuration - Mapeo de campos del usuario
   user: {
     fields: {

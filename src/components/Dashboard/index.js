@@ -12,4 +12,5 @@ export { default as DistributionChart } from "./DistributionChart";
 export { default as PayrollChart } from "./PayrollChart";
 export { default as EmployeeInfoCard } from "./EmployeeInfoCard";
 export { default as VacationRequestModal } from "./VacationRequestModal";
+export { default as NotificationSettings } from "./NotificationSettings";
 

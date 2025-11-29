@@ -12,6 +12,9 @@ import {
   EmployeeHeaderMobile,
 } from "../../components/Dashboard/mobile";
 
+// Componentes compartidos
+import { NotificationSettings } from "../../components/Dashboard";
+
 // Servicios
 import { useDashboardEmpleado, useMisVacaciones } from "../../services/dashboard";
 
@@ -177,6 +180,9 @@ export default function DashboardMobile() {
             loading={isLoading}
             maxItems={4}
           />
+
+          {/* Notificaciones Push */}
+          <NotificationSettings compact />
         </div>
       </div>
 

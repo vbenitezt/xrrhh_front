@@ -83,7 +83,6 @@ const getIconComponent = (iconName) => {
   // Si no se encontró, intentar con alias
   if (iconAliases[iconName]) {
     const aliasName = iconAliases[iconName];
-    console.log(`🔄 Usando alias "${aliasName}" para "${iconName}"`);
     return getIconComponent(aliasName); // Recursivo con el alias
   }
   
@@ -99,17 +98,12 @@ const getIconComponent = (iconName) => {
   
   for (const variant of variants) {
     if (MdIcons[variant]) {
-      console.log(`🔄 Usando variante "${variant}" para "${iconName}"`);
       return MdIcons[variant];
     }
     if (AntIcons[variant]) {
-      console.log(`🔄 Usando variante "${variant}" para "${iconName}"`);
       return AntIcons[variant];
     }
   }
-  
-  console.warn(`⚠️ Icono "${iconName}" no encontrado en las librerías configuradas`);
-  console.warn(`💡 Verifica el nombre en: https://react-icons.github.io/react-icons/`);
   
   // Retornar un icono por defecto de Ant Design
   return AntIcons.AppstoreOutlined;
@@ -134,10 +128,6 @@ const processRoute = (route, index = 0) => {
     const ComponentClass = componentMap[route.component];
     
     if (!ComponentClass) {
-      console.warn(
-        `⚠️ Componente de layout "${route.component}" no encontrado en componentMap.`,
-        `Ruta:`, route
-      );
       return null;
     }
 
@@ -154,10 +144,6 @@ const processRoute = (route, index = 0) => {
   const ComponentClass = componentMap[route.component];
   
   if (!ComponentClass) {
-    console.warn(
-      `⚠️ Componente "${route.component}" no encontrado en componentMap.`,
-      `Ruta:`, route
-    );
     return null;
   }
 
