@@ -1,5 +1,6 @@
 import Home from "./pages/home/Home";
 import { DashboardMobile } from "./pages/dashboard";
+import { EditorPlantilla } from "./pages/contratos";
 import { MainMobile, PerfilMobile } from "@xsolutioncl/ruibernate";
 
 /**
@@ -23,6 +24,27 @@ export default function getStaticRoutes() {
       insideBar: false,
       component: Home,
     },
+    
+    // =====================================================
+    // MÓDULO DE CONTRATOS LABORALES
+    // =====================================================
+    {
+      type: 'route',
+      path: '/contratos/editor',
+      label: 'Editor de Plantillas',
+      icon: 'EditOutlined',
+      insideBar: true,
+      component: EditorPlantilla,
+    },
+    {
+      type: 'route',
+      path: '/contratos/editor/:id',
+      label: 'Editar Plantilla',
+      icon: 'EditOutlined',
+      insideBar: false,
+      component: EditorPlantilla,
+    },
+    
     // Layout móvil base - las rutas hijas deben venir del API
     {
       type: 'layout',

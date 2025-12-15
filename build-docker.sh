@@ -30,6 +30,8 @@ echo "   API URL:     $VITE_API_URL"
 echo "   App Name:    $VITE_APP_NAME"
 echo "   Company:     $VITE_APP_COMPANY"
 echo "   Logo:        $VITE_APP_LOGO"
+echo "   PWA:         ${VITE_PWA_ENABLED:-false}"
+echo "   VAPID Key:   ${VITE_VAPID_PUBLIC_KEY:0:20}..."
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo ""
 

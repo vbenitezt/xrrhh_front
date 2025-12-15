@@ -5,6 +5,7 @@ import * as FiIcons from 'react-icons/fi';
 import * as AntIcons from '@ant-design/icons';
 import Home from "../pages/home/Home";
 import { DashboardEmpleado, DashboardAdmin, DashboardMobile } from "../pages/dashboard";
+import { EditorPlantilla } from "../pages/contratos";
 import { 
   GenericMaster,
   GenericMasterDetail,
@@ -31,6 +32,8 @@ const componentMap = {
   DashboardEmpleado: DashboardEmpleado,
   DashboardAdmin: DashboardAdmin,
   DashboardMobile: DashboardMobile,
+  // Módulo de Contratos Laborales
+  EditorPlantilla: EditorPlantilla,
   // Agrega aquí tus componentes personalizados:
   // MiComponente: MiComponente,
 };
